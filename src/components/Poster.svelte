@@ -1,5 +1,5 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, createEventDispatcher } from 'svelte';
 	let posterContainer;
 	let scaleFactor = 1;
 	const REFERENCE_WIDTH = 420;
@@ -12,11 +12,22 @@
 	}
 
 	let fontLoaded = false;
+    const dispatch = createEventDispatcher();
+
+function handleOvalClick() {
+    dispatch('openRsvp');
+}
 
 	onMount(() => {
-		const font = new FontFace('Zuume', 'url(/zuume.woff2)');
-		font.load().then(() => {
-			document.fonts.add(font);
+		const fontZuume = new FontFace('Zuume', 'url(/zuume.woff2)');
+		fontZuume.load().then(() => {
+			document.fonts.add(fontZuume);
+			fontLoaded = true;
+		});
+
+        const fontBern = new FontFace('Bernoru', 'url(/bernoru.woff2)');
+		fontBern.load().then(() => {
+			document.fonts.add(fontBern);
 			fontLoaded = true;
 		});
 
@@ -26,12 +37,47 @@
 	});
 </script>
 
+
 <div class="poster" bind:this={posterContainer}>
 	<div class="poster-content" style="transform: scale({scaleFactor});">
+        
         <div class="banner">
-            <h1 class:font-loaded={fontLoaded}>SMILE LIKE IT'S A WEDDING</h1>
+            <h1 class:font-Zuume={fontLoaded}>SMILE LIKE IT'S A WEDDING</h1>
           </div>
 
+          <div class="header">
+            <h2 class:font-Bern={fontLoaded}>CECI & JACK ARE EXCITED TO INVITE</h2>
+            <h2 class:font-Bern={fontLoaded}>YOU TO CELEBRATE THEIR WEDDING</h2>
+        </div>
+
+        <div class="hearts-row">
+            <img src="/assets/heart.svg" alt="Heart" class="heart small">
+            <img src="/assets/heart.svg" alt="Heart" class="heart large">
+            <img src="/assets/heart.svg" alt="Heart" class="heart large">
+            <img src="/assets/heart.svg" alt="Heart" class="heart small">
+          </div>
+
+          <div class="face-container">
+            <img src="/assets/face.svg" alt="Face" class="face">
+          </div>
+
+          <div class="celebration-text">
+            <p class:font-Zuume={fontLoaded}>FEEL THE LOVE. COME CELEBRATE WITH US</p>
+          </div>
+
+          <div class="smiley-row">
+            <img src="/assets/smiley.svg" alt="Smiley" class="smiley left">
+            <img src="/assets/smiley.svg" alt="Smiley" class="smiley right">
+          </div>
+
+          <div class="oval-diamond">
+            <img src="/assets/oval.svg" alt="Oval" class="oval top" on:click={handleOvalClick}>
+            <div class="oval-middle">
+              <img src="/assets/oval.svg" alt="Oval" class="oval left">
+              <img src="/assets/oval.svg" alt="Oval" class="oval right">
+            </div>
+            <img src="/assets/oval.svg" alt="Oval" class="oval bottom">
+        </div>
 
 	</div>
 </div>
@@ -43,6 +89,10 @@
 		max-height: 95vh;
 		background-color: #FEFA99;
 		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        background-image: url('/assets/layout.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 		position: relative;
 		overflow: hidden;
 	}
@@ -51,13 +101,23 @@
 		width: 420px;
 		height: 594px;
 		transform-origin: top left;
-		border: 1px dashed #ccc;
 	}
+
+    .font-Zuume {
+      font-family: 'Zuume', sans-serif;
+      opacity: 1;
+    }
+
+    .font-Bern {
+      font-family: 'Bernoru', sans-serif;
+      opacity: 1;
+    }
 
 
     .banner {
-      width: 569px;
-      height: 108px;
+      width: 405px;
+      height: 72px;
+      margin-top: 10px;
       background-color: #343233;
       display: flex;
       justify-content: center;
@@ -70,17 +130,161 @@
   
     h1 {
       color: #FEFA99;
-      font-size: 88px;
-      letter-spacing: -4%;
+      font-size: 61px;
+      letter-spacing: -2px;
       margin: 0;
-      padding: 0;
+      padding-top: 4px;
       text-align: center;
-      opacity: 0;
-      transition: opacity 0.3s ease;
     }
+
+    .header {
+    position: absolute;
+    top: 86px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    text-align: center;
+  }
+
+  .header h2 {
+    color: #343233;
+    font-size: 16px;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+  }
+
+  .header h2:first-child {
+    margin-bottom: -2px; /* Adjust this value to control spacing between the two lines */
+    letter-spacing: -1px;
+    font-size: 17px;
+
+}
+
+.hearts-row {
+    position: absolute;
+    top: 150px; /* Adjust this value to position the hearts below the header */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: center;
+    align-items: center; /* This will vertically align the hearts */
+    width: 100%;
+  }
+
+  .heart {
+    margin: 0 5px; /* Adjust the spacing between hearts */
+  }
+
+  .heart.small {
+    width: 20px; /* Adjust the size for smaller hearts */
+    height: 20px;
+  }
+
+  .heart.large {
+    width: 30px; /* Adjust the size for larger hearts */
+    height: 30px;
+  }
+
+  .face-container {
+    position: absolute;
+    top: 200px; /* Adjust this value to position the face below the hearts */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .face {
+    width: 100px; /* Adjust the size as needed */
+    height: auto; /* This maintains the aspect ratio */
+  }
+
+  .celebration-text {
+    position: absolute;
+    top: 320px; /* Adjust this value to position the text below the face */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    text-align: center;
+  }
+
+  .celebration-text p {
+    color: #343233; /* Adjust the color as needed */
+    font-size: 24px; /* Adjust the size as needed */
+    line-height: 1.2;
+    margin: 0;
+    padding: 0;
+  }
+
+  .smiley-row {
+    position: absolute;
+    bottom: 190px; /* Adjust this value to position the smileys from the bottom */
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 40px; /* Adjust this value to control how close to the edges the smileys are */
+  }
+
+  .smiley {
+    width: 50px; /* Adjust the size as needed */
+    height: 50px;
+  }
+
+  .smiley.left {
+    transform: rotate(-15deg); /* Optional: adds a slight tilt to the left smiley */
+  }
+
+  .smiley.right {
+    transform: rotate(15deg); /* Optional: adds a slight tilt to the right smiley */
+  }
+
+  .oval.top {
+    transform: rotate(0deg);
+    position: absolute; 
+    bottom: 40px;
+    width: 130px; 
+    height: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: pointer;
+
+  }
+
+  .oval.bottom {
+    transform: rotate(0deg);
+    position: absolute; 
+    bottom: 10px;
+    width: 100px; 
+    height: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .oval.left {
+    transform: rotate(-0deg);
+    position: absolute; 
+    bottom: 30px;
+    width: 90px; 
+    height: 50px;
+    left: 20%;
+    transform: translateX(-50%);
+  }
+
+  .oval.right {
+    transform: rotate(0deg);
+    position: absolute; 
+    bottom: 30px;
+    width: 90px; 
+    height: 50px;
+    left: 80%;
+    transform: translateX(-50%);
+  }
   
-    .font-loaded {
-      font-family: 'Zuume', sans-serif;
-      opacity: 1;
-    }
+   
 </style>

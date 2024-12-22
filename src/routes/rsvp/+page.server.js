@@ -85,7 +85,7 @@ export const actions = {
         // Return success message or redirect
         return {
             success: true,
-            message: 'Offer submitted successfully!',
+            message: 'RSVP submitted successfully!',
         };
     }
 }
