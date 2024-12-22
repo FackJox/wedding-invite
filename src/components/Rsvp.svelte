@@ -1,8 +1,10 @@
 <script>
     import { Turnstile } from 'svelte-turnstile';
-    import { onMount } from 'svelte';
+    import { onMount, createEventDispatcher } from 'svelte';
     export let form;
     import { PUBLIC_CF_TURNSTILE_SITE_KEY, PUBLIC_DOMAIN_NAME } from '$env/static/public';
+
+    const dispatch = createEventDispatcher();
 
     let fontLoaded = false;
     let rsvpContainer;
@@ -20,6 +22,10 @@
             fontLoaded = true;
         });
     });
+
+    $: if (form?.success) {
+        dispatch('success');
+    }
 </script>
 
 <div class="rsvp-container" bind:this={rsvpContainer}>
@@ -34,9 +40,7 @@
         {/if}
 
         {#if form?.success}
-            <script>
-                window.alert('Thanks for submission we will reach out shortly');
-            </script>
+            <p class="success-message">Thank you, more details to follow.</p>
         {/if}
 
         <div class="form-field">
@@ -80,6 +84,13 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         overflow: hidden;
         z-index: 1000;
+    }
+
+    .success-message {
+        color: #4CAF50;
+        text-align: center;
+        margin-top: 5px;
+        font-size: 12px;
     }
 
     form {
