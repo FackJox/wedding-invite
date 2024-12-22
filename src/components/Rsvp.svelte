@@ -8,6 +8,15 @@
 
     let fontLoaded = false;
     let rsvpContainer;
+    let formData = {
+        name: '',
+        phonenumber: '',
+        email: '',
+        plusones: '',
+        dietary: ''
+    };
+    let error = null;
+    let success = false;
 
     onMount(() => {
         const fontZuume = new FontFace('Zuume', 'url(/zuume.woff2)');
@@ -23,13 +32,42 @@
         });
     });
 
-    $: if (form?.success) {
-        dispatch('success');
+    async function handleSubmit(event) {
+        event.preventDefault();
+        error = null;
+        success = false;
+
+        const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]').value;
+
+        try {
+            const response = await fetch('/api/rsvp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ...formData,
+                    'cf-turnstile-response': turnstileResponse
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                success = true;
+                dispatch('success');
+            } else {
+                error = result.error || 'An error occurred';
+            }
+        } catch (err) {
+            console.error('Error:', err);
+            error = 'An error occurred';
+        }
     }
 </script>
 
 <div class="rsvp-container" bind:this={rsvpContainer}>
-    <form method="POST">
+    <form on:submit={handleSubmit}>
         <div class="banner">
             <h1 class:font-Zuume={fontLoaded}>FEELING THE LOVE?</h1>
         </div>
@@ -40,7 +78,7 @@
         {/if}
 
         {#if form?.success}
-            <p class="success-message">Thank you, more details to follow.</p>
+            <p class="success-message">Excited to see you! More details to follow.</p>
         {/if}
 
         <div class="form-field">

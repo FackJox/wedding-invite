@@ -35,10 +35,15 @@ function handleOvalClick() {
 		window.addEventListener('resize', updateScale);
 		return () => window.removeEventListener('resize', updateScale);
 	});
+
+    let celebrationText = "FEEL THE LOVE. COME CELEBRATE WITH US";
+
 </script>
 
 
 <div class="poster" bind:this={posterContainer}>
+    <div class="template-overlay"></div>
+
 	<div class="poster-content" style="transform: scale({scaleFactor});">
         
         <div class="banner">
@@ -62,8 +67,17 @@ function handleOvalClick() {
           </div>
 
           <div class="celebration-text">
-            <p class:font-Zuume={fontLoaded}>FEEL THE LOVE. COME CELEBRATE WITH US</p>
+            <svg viewBox="0 0 500 250" width="100%" height="250">
+              <path id="curve" d="M10,10 Q250,240 490,10" fill="none" />
+              <text class:font-Zuume={fontLoaded}>
+                <textPath href="#curve" startOffset="50%" text-anchor="middle">
+                  {celebrationText}
+                </textPath>
+              </text>
+            </svg>
           </div>
+          
+          
 
           <div class="smiley-row">
             <img src="/assets/smiley.svg" alt="Smiley" class="smiley left">
@@ -83,16 +97,28 @@ function handleOvalClick() {
 </div>
 
 <style>
+
+.template-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('/assets/layout.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.3;
+        pointer-events: none;
+        z-index: 10;
+    }
+
 	.poster {
 		aspect-ratio: 420 / 594; /* Let it shrink or grow based on screen size */
 		max-width: 95vw;
 		max-height: 95vh;
 		background-color: #FEFA99;
 		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        background-image: url('/assets/layout.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
 		position: relative;
 		overflow: hidden;
 	}
@@ -206,19 +232,20 @@ function handleOvalClick() {
 
   .celebration-text {
     position: absolute;
-    top: 320px; /* Adjust this value to position the text below the face */
+    top: 300px; /* Adjust this value as needed */
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
     text-align: center;
   }
 
-  .celebration-text p {
-    color: #343233; /* Adjust the color as needed */
-    font-size: 24px; /* Adjust the size as needed */
-    line-height: 1.2;
-    margin: 0;
-    padding: 0;
+  .celebration-text svg {
+    overflow: visible;
+  }
+
+  .celebration-text text {
+    fill: #343233; /* Text color */
+    font-size: 24px; /* Adjust as needed */
   }
 
   .smiley-row {
