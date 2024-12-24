@@ -1,11 +1,37 @@
 <script>
-	import Face from '../components/Face.svelte';
+    import { onMount } from 'svelte';
+    import Face from '../components/Face.svelte';
     import Poster from '../components/Poster.svelte';
     import Rsvp from '../components/Rsvp.svelte';
     import { fade } from 'svelte/transition';
 
     let showRsvp = false;
     let showThankYou = false;
+    let isLoaded = false;
+    
+    onMount(() => {
+        const minLoadTime = 1200; // 1.5 seconds in milliseconds
+        const startTime = Date.now();
+
+        const setLoaded = () => {
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime >= minLoadTime) {
+                isLoaded = true;
+            } else {
+                setTimeout(() => {
+                    isLoaded = true;
+                }, minLoadTime - elapsedTime);
+            }
+        };
+
+        if (document.readyState === 'complete') {
+            setLoaded();
+        } else {
+            window.addEventListener('load', setLoaded);
+        }
+    });
+    
+    console.log("🚀 ~ isLoaded:", isLoaded)
 
     function toggleRsvp() {
         showRsvp = !showRsvp;
@@ -32,6 +58,13 @@
 </script>
 
 <main>
+    {#if !isLoaded}
+    <div class="loader" transition:fade={{ duration: 500 }}>
+        <img src="/assets/ogface.svg" alt="Loading..." />
+    </div>
+    {/if}
+
+{#if isLoaded}
     <Poster on:openRsvp={toggleRsvp} />
 
     <!-- <Face /> -->
@@ -48,9 +81,17 @@
         <p class="font-Bern">More details to follow.</p>
     </div>
 {/if}
+{/if}
+
 </main>
 
 <style>
+    :global(body) {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
 	/* Fill the entire viewport and center children */
 	main {
 		width: 100vw;
@@ -60,7 +101,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-        /* background-image: url('/assets/bg1.jpg'); */
+        background-image: url('/assets/bg1.jpg');
 	}
 
     .modal {
@@ -122,6 +163,30 @@
         box-shadow: 0 2px 4px rgba(254, 250, 153, 0.2);
         width: 100%;
         box-sizing: border-box;
+    }
+
+    .loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #FEFA99;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+    }
+
+    .loader img {
+        width: 100px;
+        height: 100px;
+        animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
     /* Add these classes for font styling */

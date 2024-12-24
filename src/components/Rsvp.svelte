@@ -95,16 +95,13 @@
         </div>
         <div class="form-field">
             <label for="plusones" class:font-Bern={fontLoaded}>PLUS ONE NAME</label>
-            <input id="plusones" name="plusones" type="number" >
+            <input id="plusones" name="plusones" type="text" >
         </div>
         <div class="form-field">
             <label for="dietary" class:font-Bern={fontLoaded}>DIETARY REQUIREMENTS</label>
             <textarea id="dietary" name="dietary"></textarea>
         </div>
-        <div class="form-field">
-
         <Turnstile siteKey={PUBLIC_CF_TURNSTILE_SITE_KEY} />
-        </div>
         <button type="submit" class:font-Bern={fontLoaded}>
             <span>RSVP</span>
         </button>
@@ -204,10 +201,6 @@
         height: auto !important;
     }
 
-    button {
-        width: 100%;
-        /* ... (keep other button styles) ... */
-    }
     button {
         width: 100%;
         height: 50px;
