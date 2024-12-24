@@ -410,6 +410,8 @@ async function animateToFace() {
 		width: 100%; /* Change from fixed width to 100% */
         max-width: 400px; /* Add max-width to maintain desktop appearance */
         padding: 0 10px; /* Add some padding to prevent text from touching edges */
+		-webkit-text-size-adjust: 100%; /* Prevent iOS Safari from adjusting font size */
+
     }
 
 	.large-hearts-row,
