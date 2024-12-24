@@ -3,6 +3,7 @@
 	import { tweened } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
 	import Face from './Face.svelte';
+  console.log('Poster: Face component imported');
 
 	let currentState = 'normal';
 	let morphTo;
@@ -27,7 +28,43 @@
 	$: rotation = $progress * 360; // Rotate 360 degrees
 	$: ovalStyle = `transform: translate(${currentX}px, ${currentY}px) scale(${scale}) rotate(${rotation}deg);`;
 
+
+  let fontLoaded = false;
+    let assetsLoaded = false;
+    let allLoaded = false;
+    let faceLoaded = false;
+    
+
 	const dispatch = createEventDispatcher();
+
+  function handleFaceLoaded() {
+  console.log('Poster: handleFaceLoaded called');
+  faceLoaded = true;
+  console.log('Poster: faceLoaded set to true');
+  checkAllLoaded();
+}
+
+function checkAllLoaded() {
+  console.log('Poster: Checking all loaded:', { fontLoaded, assetsLoaded, faceLoaded });
+  if (fontLoaded && assetsLoaded && faceLoaded) {
+    console.log('Poster: All loaded, setting allLoaded to true');
+    allLoaded = true;
+    dispatch('loaded');
+  } else {
+    console.log('Poster: Not all loaded yet');
+  }
+}
+
+ 
+    function preloadImage(src) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = src;
+        });
+    }
+
 
 	function startDrag(event) {
 		isDragging = true;
@@ -153,24 +190,41 @@ async function animateToFace() {
 		scaleFactor = height / REFERENCE_HEIGHT;
 	}
 
-	let fontLoaded = false;
 
 	function handleOvalClick() {
 		dispatch('openRsvp');
 	}
 
-	onMount(() => {
-		const fontZuume = new FontFace('Zuume', 'url(/zuume.woff2)');
-		fontZuume.load().then(() => {
-			document.fonts.add(fontZuume);
-			fontLoaded = true;
-		});
+  onMount(() => {
+        const fontZuume = new FontFace('Zuume', 'url(/zuume.woff2)');
+        const fontBern = new FontFace('Bernoru', 'url(/bernoru.woff2)');
 
-		const fontBern = new FontFace('Bernoru', 'url(/bernoru.woff2)');
-		fontBern.load().then(() => {
-			document.fonts.add(fontBern);
-			fontLoaded = true;
-		});
+        const assetUrls = [
+            '/assets/bg2.jpg',
+            '/assets/heart.svg',
+            '/assets/smiley.svg',
+            '/assets/oval.svg',
+            // Add any other asset URLs here
+        ];
+
+        Promise.all([
+            fontZuume.load(),
+            fontBern.load(),
+            ...assetUrls.map(preloadImage)
+        ])
+        .then(([zuumeFont, bernFont, ...loadedImages]) => {
+            document.fonts.add(zuumeFont);
+            document.fonts.add(bernFont);
+            fontLoaded = true;
+            assetsLoaded = true;
+            checkAllLoaded();
+        })
+        .catch((error) => {
+            console.error('Error loading fonts or assets:', error);
+            // Optionally set fontLoaded and assetsLoaded to true here if you want to proceed even if loading fails
+        });
+
+  
 
 		updateScale();
 		window.addEventListener('resize', updateScale);
@@ -203,9 +257,12 @@ async function animateToFace() {
 			<img src="/assets/heart.svg" alt="Heart" class="large-heart" />
 		</div>
 
-		<div class="face-container" bind:this={facePosition}>
-			<Face on:morphReady={handleMorphReady} />
-		</div>
+    <div class="face-container" bind:this={facePosition}>
+      {#if true}
+        <Face on:morphReady={handleMorphReady} on:faceLoaded={handleFaceLoaded} />
+        {console.log('Poster: Face component rendered')}
+      {/if}
+      </div>
 
 
 		<div class="celebration-text">
@@ -253,6 +310,7 @@ async function animateToFace() {
   </div>
 	</div>
 </div>
+
 
 <style>
 	.template-overlay {

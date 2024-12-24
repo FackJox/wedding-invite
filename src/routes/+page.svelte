@@ -8,29 +8,33 @@
     let showRsvp = false;
     let showThankYou = false;
     let isLoaded = false;
-    
+    let rsvpLoaded = false;
+
     onMount(() => {
-        const minLoadTime = 1200; // 1.5 seconds in milliseconds
+    // Preload the RSVP component
+    setTimeout(() => {
+      rsvpLoaded = true;
+    }, 1000); // Delay for 1 second to ensure other components load first
+  });
+
+
+    function handleLoaded() {
+        console.log('Poster component loaded');
+        const minLoadTime = 1200; // 1.2 seconds minimum loading time
         const startTime = Date.now();
+        const elapsedTime = Date.now() - startTime;
 
-        const setLoaded = () => {
-            const elapsedTime = Date.now() - startTime;
-            if (elapsedTime >= minLoadTime) {
-                isLoaded = true;
-            } else {
-                setTimeout(() => {
-                    isLoaded = true;
-                }, minLoadTime - elapsedTime);
-            }
-        };
-
-        if (document.readyState === 'complete') {
-            setLoaded();
+        if (elapsedTime >= minLoadTime) {
+            isLoaded = true;
         } else {
-            window.addEventListener('load', setLoaded);
+            setTimeout(() => {
+                isLoaded = true;
+            }, minLoadTime - elapsedTime);
         }
-    });
+    }
+
     
+   
     console.log("🚀 ~ isLoaded:", isLoaded)
 
     function toggleRsvp() {
@@ -64,23 +68,23 @@
     </div>
     {/if}
 
-{#if isLoaded}
-    <Poster on:openRsvp={toggleRsvp} />
+<Poster on:loaded={handleLoaded} on:openRsvp={toggleRsvp} />
 
     <!-- <Face /> -->
     
-    {#if showRsvp}
-    <div class="modal" transition:fade on:click={handleModalClick}>
+    {#if rsvpLoaded}
+    <div class="rsvp-preload" class:show={showRsvp}>
+      <div class="modal" transition:fade on:click={handleModalClick}>
         <Rsvp on:success={handleFormSuccess} />
-        </div>
-    {/if}
+      </div>
+    </div>
+  {/if}
 
     {#if showThankYou}
     <div class="thank-you" transition:fade>
         <h2 class="font-Zuume">Excited to see you! </h2>
         <p class="font-Bern">More details to follow.</p>
     </div>
-{/if}
 {/if}
 
 </main>
@@ -92,6 +96,34 @@
         overflow: hidden;
     }
 
+      /* Add these font-face declarations if they're not already in your global styles */
+  @font-face {
+    font-family: 'Zuume';
+    src: url('/zuume.woff2') format('woff2');
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Bernoru';
+    src: url('/bernoru.woff2') format('woff2');
+    font-display: swap;
+  }
+
+  .rsvp-preload {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+  }
+
+  .rsvp-preload.show {
+    display: block;
+    z-index: 1000;
+  }
+
 	/* Fill the entire viewport and center children */
 	main {
 		width: 100vw;
@@ -101,7 +133,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-        background-image: url('/assets/bg1.jpg');
+        background-image: url('/assets/bg2.jpg');
 	}
 
     .modal {

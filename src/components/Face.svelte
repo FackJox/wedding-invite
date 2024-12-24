@@ -6,13 +6,15 @@
     let morphTo;
   
     onMount(async () => {
-      console.log('onMount called');
-      const { setupSVGMorph } = await import('./SVGMorph.js');
-      console.log('SVGMorph imported');
-      morphTo = await setupSVGMorph(container);
-      console.log('setupSVGMorph completed');
-      dispatch('morphReady', { morphTo });
-    });
+  console.log('Face: onMount called');
+  const { setupSVGMorph } = await import('./SVGMorph.js');
+  console.log('Face: SVGMorph imported');
+  morphTo = await setupSVGMorph(container);
+  console.log('Face: setupSVGMorph completed');
+  dispatch('faceLoaded'); 
+  console.log('Face: faceLoaded event dispatched');
+  dispatch('morphReady', { morphTo });
+});
 
     export function handleMorph(newState) {
         if (morphTo) {
