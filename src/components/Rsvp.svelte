@@ -94,11 +94,11 @@
             <input id="email" name="email" type="email" required>
         </div>
         <div class="form-field">
-            <label for="plusones" class:font-Bern={fontLoaded}>PLUS ONES?</label>
-            <input id="plusones" name="plusones" type="number" required>
+            <label for="plusones" class:font-Bern={fontLoaded}>PLUS ONE NAME</label>
+            <input id="plusones" name="plusones" type="number" >
         </div>
         <div class="form-field">
-            <label for="dietary" class:font-Bern={fontLoaded}>DIETARY REQUIREMENTS?</label>
+            <label for="dietary" class:font-Bern={fontLoaded}>DIETARY REQUIREMENTS</label>
             <textarea id="dietary" name="dietary"></textarea>
         </div>
         <Turnstile siteKey={PUBLIC_CF_TURNSTILE_SITE_KEY} />
@@ -141,14 +141,17 @@
     .banner {
         background-color: #343233;
         color: #FEFA99;
-        padding: 6px 3px;
+        padding: 3px 3px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        text-align: center;
     }
 
     h1 {
         font-size: 38px;
         text-align: center;
         margin: 0;
+        justify-items: center;
+        padding-top: 3px;
     }
 
     p {
@@ -189,7 +192,7 @@
     button {
         width: 100%;
         height: 50px;
-        margin-top: 10px;
+        margin-top: 0px;
         background-color: transparent;
         background-image: url('/assets/oval.svg');
         background-size: contain;
@@ -206,7 +209,7 @@
 
     button span {
         color: #FEFA99;
-        font-size: 28px;
+        font-size: 21px;
         position: absolute;
         top: 50%;
         left: 50%;

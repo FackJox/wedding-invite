@@ -1,48 +1,68 @@
 <script>
-	import { onMount, createEventDispatcher } from 'svelte';
-	let posterContainer;
-	let scaleFactor = 1;
-	const REFERENCE_WIDTH = 420;
-	const REFERENCE_HEIGHT = 594;
+  import { onMount, createEventDispatcher } from 'svelte';
+  import Face from './Face.svelte';
 
-	function updateScale() {
-		if (!posterContainer) return;
-		const { width, height } = posterContainer.getBoundingClientRect();
-		scaleFactor = width / REFERENCE_WIDTH;
-	}
+  let currentState = 'normal';
+  let morphTo;
+  let posterContainer;
+  let scaleFactor = 1;
+  const REFERENCE_WIDTH = 420;
+  const REFERENCE_HEIGHT = 594;
 
-	let fontLoaded = false;
-    const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher();
 
-function handleOvalClick() {
-    dispatch('openRsvp');
-}
+  function handleMorphReady(event) {
+      morphTo = event.detail.morphTo;
+  }
 
-	onMount(() => {
-		const fontZuume = new FontFace('Zuume', 'url(/zuume.woff2)');
-		fontZuume.load().then(() => {
-			document.fonts.add(fontZuume);
-			fontLoaded = true;
-		});
+  function handleMorph(newState) {
+    console.log('handleMorph called with', newState);
+    if (morphTo) {
+      morphTo(newState);
+      currentState = newState;
+      console.log('Morphed to', newState);
+    } else {
+      console.log('morphTo function not available');
+    }
+  }
 
-        const fontBern = new FontFace('Bernoru', 'url(/bernoru.woff2)');
-		fontBern.load().then(() => {
-			document.fonts.add(fontBern);
-			fontLoaded = true;
-		});
 
-		updateScale();
-		window.addEventListener('resize', updateScale);
-		return () => window.removeEventListener('resize', updateScale);
-	});
+  function updateScale() {
+      if (!posterContainer) return;
+      const { width, height } = posterContainer.getBoundingClientRect();
+      scaleFactor = width / REFERENCE_WIDTH;
+  }
 
-    let celebrationText = "FEEL THE LOVE. COME CELEBRATE WITH US";
+  let fontLoaded = false;
 
+  function handleOvalClick() {
+      dispatch('openRsvp');
+  }
+
+  onMount(() => {
+      const fontZuume = new FontFace('Zuume', 'url(/zuume.woff2)');
+      fontZuume.load().then(() => {
+          document.fonts.add(fontZuume);
+          fontLoaded = true;
+      });
+
+      const fontBern = new FontFace('Bernoru', 'url(/bernoru.woff2)');
+      fontBern.load().then(() => {
+          document.fonts.add(fontBern);
+          fontLoaded = true;
+      });
+
+      updateScale();
+      window.addEventListener('resize', updateScale);
+      return () => window.removeEventListener('resize', updateScale);
+  });
+
+  let celebrationText = "FEEL THE LOVE. COME CELEBRATE WITH US";
 </script>
 
 
 <div class="poster" bind:this={posterContainer}>
-    <div class="template-overlay"></div>
+    <!-- <div class="template-overlay"></div> -->
 
 	<div class="poster-content" style="transform: scale({scaleFactor});">
         
@@ -55,19 +75,29 @@ function handleOvalClick() {
             <h2 class:font-Bern={fontLoaded}>YOU TO CELEBRATE THEIR WEDDING</h2>
         </div>
 
-        <div class="hearts-row">
-            <img src="/assets/heart.svg" alt="Heart" class="heart small">
-            <img src="/assets/heart.svg" alt="Heart" class="heart large">
-            <img src="/assets/heart.svg" alt="Heart" class="heart large">
-            <img src="/assets/heart.svg" alt="Heart" class="heart small">
-          </div>
+        <div class="small-hearts-row">
+            <img src="/assets/heart.svg" alt="Heart" class="small-heart">
+            <img src="/assets/heart.svg" alt="Heart" class="small-heart">
+         </div>
 
-          <div class="face-container">
-            <img src="/assets/face.svg" alt="Face" class="face">
-          </div>
+         <div class="large-hearts-row">
+         <img src="/assets/heart.svg" alt="Heart" class="large-heart">
+         <img src="/assets/heart.svg" alt="Heart" class="large-heart">
+              </div>
+
+              <div class="face-container">
+                <Face on:morphReady={handleMorphReady} />
+              </div>
+          
+              <!-- Move buttons outside the face container -->
+              <div class="button-container">
+                <button on:click={() => handleMorph('normal')}>Normal</button>
+                <button on:click={() => handleMorph('mouth')}>Open Mouth</button>
+                <button on:click={() => handleMorph('wink')}>Wink</button>
+              </div>
 
           <div class="celebration-text">
-            <svg viewBox="0 0 500 250" width="100%" height="250">
+            <svg viewBox="0 0 500 250" width="180%" height="100%">
               <path id="curve" d="M10,10 Q250,240 490,10" fill="none" />
               <text class:font-Zuume={fontLoaded}>
                 <textPath href="#curve" startOffset="50%" text-anchor="middle">
@@ -86,12 +116,19 @@ function handleOvalClick() {
 
           <div class="oval-diamond">
             <img src="/assets/oval.svg" alt="Oval" class="oval top" on:click={handleOvalClick}>
+            <text class="oval-text top-text">DRAG TO MOUTH TO RSVP</text>
+            
             <div class="oval-middle">
               <img src="/assets/oval.svg" alt="Oval" class="oval left">
+              <text class="oval-text left-text">BRISTOL</text>
+              
               <img src="/assets/oval.svg" alt="Oval" class="oval right">
+              <text class="oval-text right-text">30.03.2025</text>
             </div>
+            
             <img src="/assets/oval.svg" alt="Oval" class="oval bottom">
-        </div>
+            <text class="oval-text bottom-text">MORE DETAILS TO FOLLOW</text>
+          </div>
 
 	</div>
 </div>
@@ -152,6 +189,8 @@ function handleOvalClick() {
       top: 0;
       left: 50%;
       transform: translateX(-50%);
+      text-align: center;
+
     }
   
     h1 {
@@ -190,35 +229,43 @@ function handleOvalClick() {
 
 }
 
-.hearts-row {
+.large-hearts-row {
     position: absolute;
-    top: 150px; /* Adjust this value to position the hearts below the header */
-    left: 50%;
-    transform: translateX(-50%);
+    top: 112px; /* Adjust this value to position the hearts below the header */
+    left: 0;
+    right: 0;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center; /* This will vertically align the hearts */
-    width: 100%;
+    padding: 0 62px; /* Adjust this value to control how close to the edges the smileys are */
   }
 
-  .heart {
-    margin: 0 5px; /* Adjust the spacing between hearts */
+  .small-hearts-row {
+    position: absolute;
+    top: 172px; /* Adjust this value to position the hearts below the header */
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* This will vertically align the hearts */
+    padding: 0 8px; /* Adjust this value to control how close to the edges the smileys are */
+
   }
 
-  .heart.small {
-    width: 20px; /* Adjust the size for smaller hearts */
-    height: 20px;
+  .large-heart {
+    width: 85px; /* Adjust the size for smaller hearts */
+    height: 85px;
   }
 
-  .heart.large {
-    width: 30px; /* Adjust the size for larger hearts */
-    height: 30px;
+  .small-heart {
+    width: 80px; /* Adjust the size for larger hearts */
+    height: 45px;
   }
 
   .face-container {
     position: absolute;
-    top: 200px; /* Adjust this value to position the face below the hearts */
-    left: 50%;
+    top: 165px; /* Adjust this value to position the face below the hearts */
+    left: 49.5%;
     transform: translateX(-50%);
     width: 100%;
     display: flex;
@@ -226,14 +273,14 @@ function handleOvalClick() {
   }
 
   .face {
-    width: 100px; /* Adjust the size as needed */
+    width: 259px; /* Adjust the size as needed */
     height: auto; /* This maintains the aspect ratio */
   }
 
   .celebration-text {
     position: absolute;
-    top: 300px; /* Adjust this value as needed */
-    left: 50%;
+    top: 255px; /* Adjust this value as needed */
+    left: 11%;
     transform: translateX(-50%);
     width: 100%;
     text-align: center;
@@ -245,39 +292,32 @@ function handleOvalClick() {
 
   .celebration-text text {
     fill: #343233; /* Text color */
-    font-size: 24px; /* Adjust as needed */
+    font-size: 23px; /* Adjust as needed */
   }
 
   .smiley-row {
     position: absolute;
-    bottom: 190px; /* Adjust this value to position the smileys from the bottom */
+    bottom: 87px; /* Adjust this value to position the smileys from the bottom */
     left: 0;
     right: 0;
     display: flex;
     justify-content: space-between;
-    padding: 0 40px; /* Adjust this value to control how close to the edges the smileys are */
+    padding: 0 25px; /* Adjust this value to control how close to the edges the smileys are */
   }
 
   .smiley {
-    width: 50px; /* Adjust the size as needed */
-    height: 50px;
+    width: 60px; /* Adjust the size as needed */
+    height: 60px;
   }
 
-  .smiley.left {
-    transform: rotate(-15deg); /* Optional: adds a slight tilt to the left smiley */
-  }
 
-  .smiley.right {
-    transform: rotate(15deg); /* Optional: adds a slight tilt to the right smiley */
-  }
 
   .oval.top {
-    transform: rotate(0deg);
     position: absolute; 
-    bottom: 40px;
-    width: 130px; 
+    bottom: 55px;
+    width: 179px; 
     height: 90px;
-    left: 50%;
+    left: 50.6%;
     transform: translateX(-50%);
     cursor: pointer;
 
@@ -286,10 +326,10 @@ function handleOvalClick() {
   .oval.bottom {
     transform: rotate(0deg);
     position: absolute; 
-    bottom: 10px;
-    width: 100px; 
+    bottom: 15px;
+    width: 130px; 
     height: 50px;
-    left: 50%;
+    left: 50.7%;
     transform: translateX(-50%);
   }
 
@@ -297,9 +337,9 @@ function handleOvalClick() {
     transform: rotate(-0deg);
     position: absolute; 
     bottom: 30px;
-    width: 90px; 
+    width: 100px; 
     height: 50px;
-    left: 20%;
+    left: 21%;
     transform: translateX(-50%);
   }
 
@@ -307,10 +347,49 @@ function handleOvalClick() {
     transform: rotate(0deg);
     position: absolute; 
     bottom: 30px;
-    width: 90px; 
+    width: 100px; 
     height: 50px;
     left: 80%;
     transform: translateX(-50%);
+  }
+
+  .oval-text {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-family: 'Bernoru', sans-serif;
+    color: #FEFA99;
+    pointer-events: none;
+    text-align: center;
+
+  }
+
+  .top-text {
+    bottom: 73px;
+    left: 50.6%;
+    font-size: 12px;
+    width: 150px;
+  }
+
+  .bottom-text {
+    bottom: 20px;
+    left: 50.7%;
+    font-size: 9px;
+    width: 110px;
+
+  }
+
+  .left-text {
+    bottom: 45px;
+    left: 21%;
+    font-size: 10px;
+
+  }
+
+  .right-text {
+    bottom: 45px;
+    left: 80%;
+    font-size: 10px;
+
   }
   
    

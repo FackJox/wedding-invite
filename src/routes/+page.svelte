@@ -1,4 +1,5 @@
 <script>
+	import Face from '../components/Face.svelte';
     import Poster from '../components/Poster.svelte';
     import Rsvp from '../components/Rsvp.svelte';
     import { fade } from 'svelte/transition';
@@ -21,14 +22,23 @@
             showThankYou = false;
         }, 10000);
     }
+
+    function handleModalClick(event) {
+        // Check if the click target is the modal background (not its children)
+        if (event.target.classList.contains('modal')) {
+            showRsvp = false;
+        }
+    }
 </script>
 
 <main>
     <Poster on:openRsvp={toggleRsvp} />
+
+    <!-- <Face /> -->
     
     {#if showRsvp}
-        <div class="modal" transition:fade>
-            <Rsvp on:success={handleFormSuccess} />
+    <div class="modal" transition:fade on:click={handleModalClick}>
+        <Rsvp on:success={handleFormSuccess} />
         </div>
     {/if}
 
@@ -50,7 +60,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: #f0f0f0; /* just a gray background for the wireframe */
+        /* background-image: url('/assets/bg1.jpg'); */
 	}
 
     .modal {
@@ -103,7 +113,7 @@
     }
 
     .thank-you h2 {
-        font-size: 38px;
+        font-size: 50px;
         text-align: center;
         margin: 0;
         background-color: #FEFA99;
