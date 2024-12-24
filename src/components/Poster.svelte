@@ -87,15 +87,32 @@
 	}
 
   async function animateToFace() {
-    const faceRect = facePosition.getBoundingClientRect();
-    const ovalRect = ovalTopElement.getBoundingClientRect();
+  // Get the bounding rectangle of the face element
+  const faceRect = facePosition.getBoundingClientRect();
+  console.log("🚀 ~ animateToFace ~ faceRect:", faceRect)
 
-    const targetX = faceRect.left + faceRect.width / 2 - ovalRect.width / 2 - ovalRect.left;
-    const targetY = faceRect.top + faceRect.height / 1.75 - ovalRect.height / 2 - ovalRect.top;
+  // Get the bounding rectangle of the oval element
+  const ovalRect = ovalTopElement.getBoundingClientRect();
+  console.log("🚀 ~ animateToFace ~ ovalRect:", ovalRect)
 
-    await progress.set(1);
-    currentX = targetX;
-    currentY = targetY;
+  // Get the bounding rectangle of the poster container
+  const posterRect = posterContainer.getBoundingClientRect();
+  console.log("🚀 ~ animateToFace ~ posterRect:", posterRect)
+
+  console.log("🚀 ~ animateToFace ~ scaleFactor:", scaleFactor)
+
+  // Calculate the target X position to center the oval horizontally on the face
+  const targetX = faceRect.left + faceRect.width / 2 - ovalRect.width / 2 - ovalRect.left;
+
+  // Calculate the target Y position, adjusting for the scaleFactor
+  const targetY = (faceRect.top - posterRect.top + faceRect.height / 1.75 - ovalRect.height / 2) / scaleFactor - (ovalRect.top - posterRect.top) / scaleFactor;
+  console.log("🚀 ~ animateToFace ~ targetY:", targetY)
+
+  // Animate the progress to 1 (full animation)
+  await progress.set(1);
+  // Update the current X and Y positions to the target positions
+  currentX = targetX;
+  currentY = targetY;
 
     await handleMorph('mouth');
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -136,7 +153,7 @@
 	function updateScale() {
 		if (!posterContainer) return;
 		const { width, height } = posterContainer.getBoundingClientRect();
-		scaleFactor = width / REFERENCE_WIDTH;
+		scaleFactor = height / REFERENCE_HEIGHT;
 	}
 
 	let fontLoaded = false;
