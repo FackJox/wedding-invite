@@ -86,30 +86,37 @@
 		}
 	}
 
-	async function animateToFace() {
-		const faceRect = facePosition.getBoundingClientRect();
-		const ovalRect = ovalTopElement.getBoundingClientRect();
+  async function animateToFace() {
+    const faceRect = facePosition.getBoundingClientRect();
+    const ovalRect = ovalTopElement.getBoundingClientRect();
 
-		const targetX = faceRect.left + faceRect.width / 2 - ovalRect.width / 2 - ovalRect.left;
-		const targetY = faceRect.top + faceRect.height / 1.75 - ovalRect.height / 2 - ovalRect.top;
+    const targetX = faceRect.left + faceRect.width / 2 - ovalRect.width / 2 - ovalRect.left;
+    const targetY = faceRect.top + faceRect.height / 1.75 - ovalRect.height / 2 - ovalRect.top;
 
-		await progress.set(1);
-		currentX = targetX;
-		currentY = targetY;
+    await progress.set(1);
+    currentX = targetX;
+    currentY = targetY;
 
-		await handleMorph('mouth');
-		await new Promise((resolve) => setTimeout(resolve, 500));
-		await handleMorph('normal');
-		await new Promise((resolve) => setTimeout(resolve, 500));
-		await handleMorph('wink');
-		await new Promise((resolve) => setTimeout(resolve, 200));
-		await handleMorph('normal');
+    await handleMorph('mouth');
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
-		// Reset the oval position and animation
-		currentX = 0;
-		currentY = 0;
-		progress.set(0);
-	}
+    // Make the oval disappear
+    ovalTopElement.style.opacity = '0';
+    await new Promise((resolve) => setTimeout(resolve, 300)); // Wait for the fade-out animation
+
+    await handleMorph('normal');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await handleMorph('wink');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await handleMorph('normal');
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+
+  
+
+    handleOvalClick()
+
+}
 
 	function handleMorphReady(event) {
 		morphTo = event.detail.morphTo;
@@ -186,12 +193,6 @@
 			<Face on:morphReady={handleMorphReady} />
 		</div>
 
-		<!-- Move buttons outside the face container -->
-		<div class="button-container">
-			<button on:click={() => handleMorph('normal')}>Normal</button>
-			<button on:click={() => handleMorph('mouth')}>Open Mouth</button>
-			<button on:click={() => handleMorph('wink')}>Wink</button>
-		</div>
 
 		<div class="celebration-text">
 			<svg viewBox="0 0 500 250" width="180%" height="100%">
@@ -417,7 +418,7 @@
     left: 29%;
     transform: translateX(-50%);
     cursor: grab;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .oval-container.top .oval-image {
