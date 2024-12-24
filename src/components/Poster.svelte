@@ -302,7 +302,7 @@ async function animateToFace() {
           <text class="oval-text left-text">BRISTOL</text>
   
           <img src="/assets/oval.svg" alt="Oval" class="oval right" />
-          <text class="oval-text right-text">30.03.2025</text>
+          <text class="oval-text right-text">29.03.2025</text>
       </div>
   
       <img src="/assets/oval.svg" alt="Oval" class="oval bottom" />
@@ -339,10 +339,12 @@ async function animateToFace() {
 	}
 
 	.poster-content {
-		width: 420px;
-		height: 594px;
-		transform-origin: top left;
-	}
+        width: 420px;
+        height: 594px;
+        -webkit-transform-origin: top left;
+        transform-origin: top left;
+        -webkit-text-size-adjust: 100%;
+    }
 
 	.font-Zuume {
 		font-family: 'Zuume', sans-serif;
@@ -367,7 +369,16 @@ async function animateToFace() {
 		left: 50%;
 		transform: translateX(-50%);
 		text-align: center;
-	}
+        display: -webkit-flex;
+        display: flex;
+        -webkit-justify-content: center;
+        justify-content: center;
+        -webkit-align-items: center;
+        align-items: center;
+        left: 50%;
+        -webkit-transform: translateX(-50%);
+        transform: translateX(-50%);
+    }
 
 	h1 {
 		color: #fefa99;
@@ -385,7 +396,20 @@ async function animateToFace() {
 		transform: translateX(-50%);
 		width: 400px;
 		text-align: center;
-	}
+		-webkit-transform: translateX(-50%);
+        transform: translateX(-50%);
+    }
+
+	.large-hearts-row,
+    .small-hearts-row,
+    .smiley-row {
+        display: -webkit-flex;
+        display: flex;
+        -webkit-justify-content: space-between;
+        justify-content: space-between;
+        -webkit-align-items: center;
+        align-items: center;
+    }
 
 	.header h2 {
 		color: #343233;
@@ -444,12 +468,15 @@ async function animateToFace() {
 		width: 100%;
 		display: flex;
 		justify-content: center;
-	}
+		-webkit-transform: translateX(-50%);
+        transform: translateX(-50%);
+        display: -webkit-flex;
+        display: flex;
+        -webkit-justify-content: center;
+        justify-content: center;
+    }
 
-	.face {
-		width: 259px; /* Adjust the size as needed */
-		height: auto; /* This maintains the aspect ratio */
-	}
+
 
 	.celebration-text {
 		position: absolute;
@@ -458,7 +485,9 @@ async function animateToFace() {
 		transform: translateX(-50%);
 		width: 100%;
 		text-align: center;
-	}
+        -webkit-transform: translateX(-50%);
+        transform: translateX(-50%);
+    }
 
 	.celebration-text svg {
 		overflow: visible;
@@ -484,8 +513,15 @@ async function animateToFace() {
 		height: 60px;
 	}
 
+
+	
   .oval-container.top {
         position: relative;
+		-webkit-transform: translateX(-50%);
+        transform: translateX(-50%);
+        -webkit-transition: -webkit-transform 0.3s ease, opacity 0.3s ease;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        will-change: transform, opacity;
     }
 
     .oval-container.top .oval-image {
@@ -507,7 +543,14 @@ async function animateToFace() {
         stroke-width: 8;
 
         stroke-dashoffset: 0;
+		-webkit-animation: dash 20s linear infinite;
         animation: dash 20s linear infinite;
+    }
+
+    @-webkit-keyframes dash {
+        to {
+            stroke-dashoffset: 300;
+        }
     }
 
     @keyframes dash {
@@ -545,7 +588,9 @@ async function animateToFace() {
     color: #fefa99;
     font-family: 'Bernoru', sans-serif;
     pointer-events: none;
-}
+    -webkit-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
+    }
 
 /* Update the existing .oval-text styles */
 .oval-text {
@@ -555,7 +600,9 @@ async function animateToFace() {
     color: #fefa99;
     pointer-events: none;
     text-align: center;
-}
+	-webkit-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
+    }
 
 	.oval.bottom {
 		transform: rotate(0deg);
@@ -586,6 +633,14 @@ async function animateToFace() {
 		left: 80%;
 		transform: translateX(-50%);
 	}
+
+	.oval.bottom,
+    .oval.left,
+    .oval.right {
+        /* ... (keep existing styles) ... */
+        -webkit-transform: translateX(-50%);
+        transform: translateX(-50%);
+    }
 
 	.oval-text {
 		position: absolute;

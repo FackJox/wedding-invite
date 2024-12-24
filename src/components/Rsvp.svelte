@@ -115,20 +115,15 @@
 </div>
 
 <style>
-    .rsvp-container {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 90%;
-        max-width: 320px;
-        background-color: #FEFA99;
-        border: 2px solid #343233;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-        z-index: 1000;
-    }
+.rsvp-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+}
 
     .success-message {
         color: #4CAF50;
@@ -138,12 +133,19 @@
     }
 
     form {
-        padding: 15px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
+    width: 90%;
+    max-width: 320px;
+    background-color: #FEFA99;
+    border: 2px solid #343233;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    z-index: 1000;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
     .banner {
         background-color: #343233;
         color: #FEFA99;
@@ -208,52 +210,59 @@
     }
 
     button {
-        width: 100%;
-        height: 50px;
-        margin-top: 0px;
-        background-color: transparent;
-        background-image: url('/assets/oval.svg');
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
-        border: none;
-        cursor: pointer;
-        position: relative;
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        transition: background-image 0.3s ease;
+    width: 100%;
+    height: 50px;
+    margin-top: 0px;
+    background-color: transparent;
+    background-image: url('/assets/oval.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-image 0.3s ease;
+    -webkit-appearance: none;
+}
 
-    }
-
-    button.submitting {
+button.submitting {
     background-image: url('/assets/smiley.svg');
     animation: spin 1s linear infinite;
+    -webkit-animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% { transform: rotate(0deg); -webkit-transform: rotate(0deg); }
+    100% { transform: rotate(360deg); -webkit-transform: rotate(360deg); }
 }
+
+@-webkit-keyframes spin {
+    0% { -webkit-transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); }
+}
+
 
 button:disabled {
     cursor: not-allowed;
     opacity: 0.8;
 }
 
-    button span {
-        color: #FEFA99;
-        font-size: 21px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 100%;
-        text-align: center;
-        transition: opacity 0.3s ease;
-
-    }
+button span {
+    color: #FEFA99;
+    font-size: 21px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    -webkit-transform: translate(-50%, -50%);
+    width: 100%;
+    text-align: center;
+    transition: opacity 0.3s ease;
+}
 
     button.submitting span {
     opacity: 0;
