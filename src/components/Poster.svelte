@@ -86,26 +86,23 @@
 		}
 	}
 
-  async function animateToFace() {
+async function animateToFace() {
   // Get the bounding rectangle of the face element
   const faceRect = facePosition.getBoundingClientRect();
   console.log("🚀 ~ animateToFace ~ faceRect:", faceRect)
 
   // Get the bounding rectangle of the oval element
   const ovalRect = ovalTopElement.getBoundingClientRect();
-  console.log("🚀 ~ animateToFace ~ ovalRect:", ovalRect)
 
   // Get the bounding rectangle of the poster container
   const posterRect = posterContainer.getBoundingClientRect();
-  console.log("🚀 ~ animateToFace ~ posterRect:", posterRect)
-
-  console.log("🚀 ~ animateToFace ~ scaleFactor:", scaleFactor)
 
   // Calculate the target X position to center the oval horizontally on the face
   const targetX = faceRect.left + faceRect.width / 2 - ovalRect.width / 2 - ovalRect.left;
 
   // Calculate the target Y position, adjusting for the scaleFactor
-  const targetY = (faceRect.top - posterRect.top + faceRect.height / 1.75 - ovalRect.height / 2) / scaleFactor - (ovalRect.top - posterRect.top) / scaleFactor;
+  const targetY = -144.2
+
   console.log("🚀 ~ animateToFace ~ targetY:", targetY)
 
   // Animate the progress to 1 (full animation)

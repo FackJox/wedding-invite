@@ -101,7 +101,10 @@
             <label for="dietary" class:font-Bern={fontLoaded}>DIETARY REQUIREMENTS</label>
             <textarea id="dietary" name="dietary"></textarea>
         </div>
+        <div class="form-field">
+
         <Turnstile siteKey={PUBLIC_CF_TURNSTILE_SITE_KEY} />
+        </div>
         <button type="submit" class:font-Bern={fontLoaded}>
             <span>RSVP</span>
         </button>
@@ -189,6 +192,22 @@
         resize: vertical;
     }
 
+    /* Add these new styles for the Turnstile component */
+    :global(.turnstile) {
+        width: 100% !important;
+        height: auto !important;
+        margin-bottom: 10px;
+    }
+
+    :global(.turnstile iframe) {
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    button {
+        width: 100%;
+        /* ... (keep other button styles) ... */
+    }
     button {
         width: 100%;
         height: 50px;
@@ -221,6 +240,7 @@
     button:hover {
         opacity: 0.8;
     }
+    
 
     .error-message {
         color: #FF0000;
