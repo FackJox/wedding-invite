@@ -378,6 +378,9 @@ async function animateToFace() {
         left: 50%;
         -webkit-transform: translateX(-50%);
         transform: translateX(-50%);
+		width: 100%; /* Change from fixed width to 100% */
+        max-width: 405px; /* Add max-width to maintain desktop appearance */
+        padding: 0 5px; /* Add some padding to prevent text from touching edges */
     }
 
 	h1 {
@@ -387,7 +390,13 @@ async function animateToFace() {
 		margin: 0;
 		padding-top: 4px;
 		text-align: center;
-	}
+		font-size: 61px;
+        white-space: nowrap; /* Prevent text wrapping */
+        overflow: hidden; /* Hide overflowing text */
+        text-overflow: ellipsis; /* Show ellipsis for overflowing text */
+        width: 100%; /* Ensure the text takes full width of the container */
+        -webkit-text-size-adjust: 100%; /* Prevent iOS Safari from adjusting font size */
+    }
 
 	.header {
 		position: absolute;
@@ -398,6 +407,9 @@ async function animateToFace() {
 		text-align: center;
 		-webkit-transform: translateX(-50%);
         transform: translateX(-50%);
+		width: 100%; /* Change from fixed width to 100% */
+        max-width: 400px; /* Add max-width to maintain desktop appearance */
+        padding: 0 10px; /* Add some padding to prevent text from touching edges */
     }
 
 	.large-hearts-row,
@@ -420,7 +432,12 @@ async function animateToFace() {
 		top: auto;
 		left: auto;
 		transform: none;
-	}
+		white-space: nowrap; /* Prevent text wrapping */
+        overflow: hidden; /* Hide overflowing text */
+        text-overflow: ellipsis; /* Show ellipsis for overflowing text */
+        width: 100%; /* Ensure the text takes full width of the container */
+        -webkit-text-size-adjust: 100%; /* Prevent iOS Safari from adjusting font size */
+    }
 
 	.header h2:first-child {
 		margin-bottom: -2px; /* Adjust this value to control spacing between the two lines */
@@ -469,8 +486,7 @@ async function animateToFace() {
 		display: flex;
 		justify-content: center;
 		-webkit-transform: translateX(-50%);
-        transform: translateX(-50%);
-        display: -webkit-flex;
+        display: -webkit-absolute;
         display: flex;
         -webkit-justify-content: center;
         justify-content: center;
