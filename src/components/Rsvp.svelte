@@ -18,6 +18,9 @@
     let error = null;
     let success = false;
 
+    let isSubmitting = false;
+
+
     onMount(() => {
         const fontZuume = new FontFace('Zuume', 'url(/zuume.woff2)');
         fontZuume.load().then(() => {
@@ -33,37 +36,40 @@
     });
 
     async function handleSubmit(event) {
-        event.preventDefault();
-        error = null;
-        success = false;
+    event.preventDefault();
+    error = null;
+    success = false;
+    isSubmitting = true;
 
-        const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]').value;
+    const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]').value;
 
-        try {
-            const response = await fetch('/api/rsvp', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    'cf-turnstile-response': turnstileResponse
-                })
-            });
+    try {
+        const response = await fetch('/api/rsvp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ...formData,
+                'cf-turnstile-response': turnstileResponse
+            })
+        });
 
-            const result = await response.json();
+        const result = await response.json();
 
-            if (response.ok) {
-                success = true;
-                dispatch('success');
-            } else {
-                error = result.error || 'An error occurred';
-            }
-        } catch (err) {
-            console.error('Error:', err);
-            error = 'An error occurred';
+        if (response.ok) {
+            success = true;
+            dispatch('success');
+        } else {
+            error = result.error || 'An error occurred';
         }
+    } catch (err) {
+        console.error('Error:', err);
+        error = 'An error occurred';
+    } finally {
+        isSubmitting = false;
     }
+}
 </script>
 
 <div class="rsvp-container" bind:this={rsvpContainer}>
@@ -83,27 +89,27 @@
 
         <div class="form-field">
             <label for="name" class:font-Bern={fontLoaded}>NAME</label>
-            <input id="name" name="name" type="text" required>
+            <input id="name" name="name" type="text" required bind:value={formData.name}>
         </div>
         <div class="form-field">
             <label for="phonenumber" class:font-Bern={fontLoaded}>PHONE NUMBER</label>
-            <input id="phonenumber" name="phonenumber" type="tel" required>
+            <input id="phonenumber" name="phonenumber" type="tel" required bind:value={formData.phonenumber}>
         </div>
         <div class="form-field">
             <label for="email" class:font-Bern={fontLoaded}>EMAIL</label>
-            <input id="email" name="email" type="email" required>
+            <input id="email" name="email" type="email" required bind:value={formData.email}>
         </div>
         <div class="form-field">
             <label for="plusones" class:font-Bern={fontLoaded}>PLUS ONE NAME</label>
-            <input id="plusones" name="plusones" type="text" >
+            <input id="plusones" name="plusones" type="text" bind:value={formData.plusones}>
         </div>
         <div class="form-field">
             <label for="dietary" class:font-Bern={fontLoaded}>DIETARY REQUIREMENTS</label>
-            <textarea id="dietary" name="dietary"></textarea>
+            <textarea id="dietary" name="dietary" bind:value={formData.dietary}></textarea>
         </div>
         <Turnstile siteKey={PUBLIC_CF_TURNSTILE_SITE_KEY} />
-        <button type="submit" class:font-Bern={fontLoaded}>
-            <span>RSVP</span>
+        <button type="submit" class:font-Bern={fontLoaded} class:submitting={isSubmitting} disabled={isSubmitting}>
+            <span>{isSubmitting ? '' : 'RSVP'}</span>
         </button>
     </form>
 </div>
@@ -217,7 +223,24 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        transition: background-image 0.3s ease;
+
     }
+
+    button.submitting {
+    background-image: url('/assets/smiley.svg');
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+}
 
     button span {
         color: #FEFA99;
@@ -228,7 +251,13 @@
         transform: translate(-50%, -50%);
         width: 100%;
         text-align: center;
+        transition: opacity 0.3s ease;
+
     }
+
+    button.submitting span {
+    opacity: 0;
+}
 
     button:hover {
         opacity: 0.8;
