@@ -399,14 +399,14 @@ async function animateToFace() {
 	}
 
 /* Safari desktop and mobile only */
-@media screen and (min-color-index:0) 
-and(-webkit-min-device-pixel-ratio:0) 
-{ @media {
-    _::-webkit-full-page-media, _:future, :root h1 {
-        font-size: 60px;
-        letter-spacing: -4px;
+@media not all and (min-resolution:.001dpcm) {
+    @supports (-webkit-appearance:none) {
+        h1 {
+            font-size: 60px;
+            letter-spacing: -3px;
+        }
     }
-}}
+}
 
 	.header {
 		position: absolute;
