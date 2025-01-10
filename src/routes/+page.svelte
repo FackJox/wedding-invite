@@ -54,11 +54,11 @@
     }
 
     function handleModalClick(event) {
-        // Check if the click target is the modal background (not its children)
-        if (event.target.classList.contains('modal')) {
-            showRsvp = false;
-        }
+    // Check if the click target is the modal background (not its children)
+    if (event.currentTarget === event.target) {
+        showRsvp = false;
     }
+}
 </script>
 
 <main>
@@ -74,8 +74,8 @@
     
     {#if rsvpLoaded}
     <div class="rsvp-preload" class:show={showRsvp}>
-      <div class="modal" transition:fade on:click={handleModalClick}>
-        <Rsvp on:success={handleFormSuccess} />
+        <div class="modal" transition:fade on:click|self={handleModalClick}>
+            <Rsvp on:success={handleFormSuccess} />
       </div>
     </div>
   {/if}

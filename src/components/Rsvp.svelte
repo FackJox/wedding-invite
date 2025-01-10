@@ -123,6 +123,8 @@
     width: 100%;
     padding: 20px;
     box-sizing: border-box;
+    pointer-events: none; /* Add this to allow clicks to pass through */
+
 }
 
     .success-message {
@@ -145,6 +147,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    pointer-events: auto;
+
 }
     .banner {
         background-color: #343233;

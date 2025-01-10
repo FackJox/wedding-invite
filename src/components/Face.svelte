@@ -51,6 +51,12 @@
       -ms-flex-align: center;
       align-items: center;
     }
+
+       /* Add this to ensure SVG is oriented correctly */
+       :global(svg) {
+        transform: rotate(0deg) !important;
+        -webkit-transform: rotate(0deg) !important;
+    }
   
   </style>
   

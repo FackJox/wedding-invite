@@ -378,9 +378,9 @@ async function animateToFace() {
         left: 50%;
         -webkit-transform: translateX(-50%);
         transform: translateX(-50%);
-		width: 100%; /* Change from fixed width to 100% */
-        max-width: 405px; /* Add max-width to maintain desktop appearance */
-        padding: 0 5px; /* Add some padding to prevent text from touching edges */
+
+		white-space: nowrap;
+		overflow: hidden;
     }
 
 	h1 {
@@ -390,13 +390,23 @@ async function animateToFace() {
 		margin: 0;
 		padding-top: 4px;
 		text-align: center;
-		font-size: 61px;
-        white-space: nowrap; /* Prevent text wrapping */
-        overflow: hidden; /* Hide overflowing text */
-        text-overflow: ellipsis; /* Show ellipsis for overflowing text */
-        width: 100%; /* Ensure the text takes full width of the container */
-        -webkit-text-size-adjust: 100%; /* Prevent iOS Safari from adjusting font size */
+
+		white-space: nowrap;
+    -webkit-text-size-adjust: none;
+    width: 100%;
+    display: block;
+    line-height: 1;
+	}
+
+/* Safari desktop and mobile only */
+@media screen and (min-color-index:0) 
+and(-webkit-min-device-pixel-ratio:0) 
+{ @media {
+    _::-webkit-full-page-media, _:future, :root h1 {
+        font-size: 60px;
+        letter-spacing: -4px;
     }
+}}
 
 	.header {
 		position: absolute;
@@ -407,22 +417,6 @@ async function animateToFace() {
 		text-align: center;
 		-webkit-transform: translateX(-50%);
         transform: translateX(-50%);
-		width: 100%; /* Change from fixed width to 100% */
-        max-width: 400px; /* Add max-width to maintain desktop appearance */
-        padding: 0 10px; /* Add some padding to prevent text from touching edges */
-		-webkit-text-size-adjust: 100%; /* Prevent iOS Safari from adjusting font size */
-
-    }
-
-	.large-hearts-row,
-    .small-hearts-row,
-    .smiley-row {
-        display: -webkit-flex;
-        display: flex;
-        -webkit-justify-content: space-between;
-        justify-content: space-between;
-        -webkit-align-items: center;
-        align-items: center;
     }
 
 	.header h2 {
@@ -434,12 +428,7 @@ async function animateToFace() {
 		top: auto;
 		left: auto;
 		transform: none;
-		white-space: nowrap; /* Prevent text wrapping */
-        overflow: hidden; /* Hide overflowing text */
-        text-overflow: ellipsis; /* Show ellipsis for overflowing text */
-        width: 100%; /* Ensure the text takes full width of the container */
-        -webkit-text-size-adjust: 100%; /* Prevent iOS Safari from adjusting font size */
-    }
+	}
 
 	.header h2:first-child {
 		margin-bottom: -2px; /* Adjust this value to control spacing between the two lines */
@@ -487,12 +476,19 @@ async function animateToFace() {
 		width: 100%;
 		display: flex;
 		justify-content: center;
-		-webkit-transform: translateX(-50%);
-        display: -webkit-absolute;
-        display: flex;
-        -webkit-justify-content: center;
-        justify-content: center;
+		transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    backface-visibility: visible;
+    -webkit-backface-visibility: visible;
+}
+
+/* In Poster.svelte */
+@supports (-webkit-touch-callout: none) {
+    .face-container {
+        transform: translateX(-50%) rotate(0deg) !important;
+        -webkit-transform: translateX(-50%) rotate(0deg) !important;
     }
+}
 
 
 
@@ -503,9 +499,7 @@ async function animateToFace() {
 		transform: translateX(-50%);
 		width: 100%;
 		text-align: center;
-        -webkit-transform: translateX(-50%);
-        transform: translateX(-50%);
-    }
+	}
 
 	.celebration-text svg {
 		overflow: visible;
@@ -535,11 +529,6 @@ async function animateToFace() {
 	
   .oval-container.top {
         position: relative;
-		-webkit-transform: translateX(-50%);
-        transform: translateX(-50%);
-        -webkit-transition: -webkit-transform 0.3s ease, opacity 0.3s ease;
-        transition: transform 0.3s ease, opacity 0.3s ease;
-        will-change: transform, opacity;
     }
 
     .oval-container.top .oval-image {
@@ -561,14 +550,7 @@ async function animateToFace() {
         stroke-width: 8;
 
         stroke-dashoffset: 0;
-		-webkit-animation: dash 20s linear infinite;
         animation: dash 20s linear infinite;
-    }
-
-    @-webkit-keyframes dash {
-        to {
-            stroke-dashoffset: 300;
-        }
     }
 
     @keyframes dash {
@@ -606,9 +588,7 @@ async function animateToFace() {
     color: #fefa99;
     font-family: 'Bernoru', sans-serif;
     pointer-events: none;
-    -webkit-transform: translate(-50%, -50%);
-        transform: translate(-50%, -50%);
-    }
+}
 
 /* Update the existing .oval-text styles */
 .oval-text {
@@ -618,9 +598,7 @@ async function animateToFace() {
     color: #fefa99;
     pointer-events: none;
     text-align: center;
-	-webkit-transform: translate(-50%, -50%);
-        transform: translate(-50%, -50%);
-    }
+}
 
 	.oval.bottom {
 		transform: rotate(0deg);
@@ -651,14 +629,6 @@ async function animateToFace() {
 		left: 80%;
 		transform: translateX(-50%);
 	}
-
-	.oval.bottom,
-    .oval.left,
-    .oval.right {
-        /* ... (keep existing styles) ... */
-        -webkit-transform: translateX(-50%);
-        transform: translateX(-50%);
-    }
 
 	.oval-text {
 		position: absolute;
