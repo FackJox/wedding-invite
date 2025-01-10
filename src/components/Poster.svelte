@@ -482,15 +482,13 @@ and(-webkit-min-device-pixel-ratio:0)
     -webkit-backface-visibility: visible;
 }
 
-/* In Poster.svelte */
-@supports (-webkit-touch-callout: none) {
-    .face-container {
-        transform: translateX(-50%) rotate(0deg) !important;
-        -webkit-transform: translateX(-50%) rotate(0deg) !important;
-    }
+/* Update the global SVG styles */
+:global(.face-container svg) {
+  transform: scale(1, -1);
+  -webkit-transform: scale(1, -1);
+  width: 85%;
+  height: 100%;
 }
-
-
 
 	.celebration-text {
 		position: absolute;

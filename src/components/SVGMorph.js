@@ -13,7 +13,6 @@ export async function setupSVGMorph(container) {
     // Ensure the aspect ratio is preserved (centered)
     .attr({ preserveAspectRatio: 'xMidYMid meet' });
 
-    draw.transform({ scaleY: -1 });
 
 
   async function getSvgPaths(svgFile) {
