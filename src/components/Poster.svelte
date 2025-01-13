@@ -399,15 +399,12 @@ async function animateToFace() {
 	}
 
 /* Safari desktop and mobile only */
-@media not all and (min-resolution:.001dpcm) {
-    @supports (-webkit-appearance:none) {
-        h1 {
-            font-size: 60px;
-            letter-spacing: -3px;
-        }
+@supports (-webkit-touch-callout: none) and (-webkit-appearance: none) {
+    h1 {
+        font-size: 60px;
+        letter-spacing: -3px;
     }
 }
-
 	.header {
 		position: absolute;
 		top: 86px;
@@ -428,13 +425,36 @@ async function animateToFace() {
 		top: auto;
 		left: auto;
 		transform: none;
+		white-space: nowrap;
+    -webkit-text-size-adjust: none;
+    width: 100%;
+    display: block;
+		
 	}
 
 	.header h2:first-child {
 		margin-bottom: -2px; /* Adjust this value to control spacing between the two lines */
 		letter-spacing: -1px;
 		font-size: 17px;
+		white-space: nowrap;
+    -webkit-text-size-adjust: none;
+    width: 100%;
+    display: block;
 	}
+
+	/* Safari desktop and mobile only */
+@supports (-webkit-touch-callout: none) and (-webkit-appearance: none) {
+    .header h2 {
+		letter-spacing: -2px;
+		font-size: 15px;
+    }
+
+	.header h2:first-child {
+		letter-spacing: -2px;
+		margin-bottom: -1px; /* Adjust this value to control spacing between the two lines */
+		font-size: 16px;
+	}
+}
 
 	.large-hearts-row {
 		position: absolute;
