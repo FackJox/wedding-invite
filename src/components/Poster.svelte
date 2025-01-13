@@ -401,7 +401,7 @@ async function animateToFace() {
 /* Safari desktop and mobile only */
 @supports (-webkit-touch-callout: none) and (-webkit-appearance: none) {
     h1 {
-        font-size: 58px;
+        font-size: 54px;
         letter-spacing: -3px;
     }
 }
@@ -446,13 +446,13 @@ async function animateToFace() {
 @supports (-webkit-touch-callout: none) and (-webkit-appearance: none) {
     .header h2 {
 		letter-spacing: -2px;
-		font-size: 15px;
+		font-size: 17px;
     }
 
 	.header h2:first-child {
 		letter-spacing: -2px;
 		margin-bottom: -1px; /* Adjust this value to control spacing between the two lines */
-		font-size: 16px;
+		font-size: 17px;
 	}
 }
 
