@@ -401,7 +401,7 @@ async function animateToFace() {
 /* Safari desktop and mobile only */
 @supports (-webkit-touch-callout: none) and (-webkit-appearance: none) {
     h1 {
-        font-size: 60px;
+        font-size: 58px;
         letter-spacing: -3px;
     }
 }
