@@ -1,6 +1,7 @@
 <script>
 	import { onMount, createEventDispatcher } from 'svelte';
 	import BackgroundShader from './BackgroundShader.svelte';
+	import ShaderGUI from './ShaderGUI.svelte';
 
 	let posterContainer;
 	let scaleFactor = 1;
@@ -10,6 +11,43 @@
 	const dispatch = createEventDispatcher();
 
 	let fontsLoaded = false;
+
+	// Shader parameters - tweak via GUI
+	let shaderParams = {
+		rotationSpeed: 0.03,
+		timeScale: 0.16,
+		blobStrength: 0.095,
+		blobFreqX: 8.8,
+		blobFreqY: 1.2,
+		swirlStrength: 0.75,
+		swirlFalloff: 3.0,
+		swirlFreq: 10.0,
+		swirlSpeed: 2.0,
+		flowStrength: 0.11,
+		flowFreq: 3.0,
+		rippleStrength: 0.014,
+		rippleFreq: 17.5,
+		breatheAmount: 0.22,
+		breatheSpeed: 0.05,
+		baseScale: 0.5,
+		panSpeed: 0.001,
+		blur: 0,
+		// Color adjustments
+		saturation: 1.15,
+		contrast: 1.1,
+		// Film grain - retrowave analog aesthetic
+		grainIntensity: 0.25,
+		grainSize: 2.7,
+		grainSpeed: 15,
+		grainChroma: 0,
+		// Black & white speckles - film dust/dirt
+		speckleIntensity: 0.01,
+		speckleSize: 0.1,
+		speckleDensity: 0.791,
+		speckleSpeed: 5
+	};
+
+	let imageSrc = '/assets/background.png';
 
 	function updateScale() {
 		if (!posterContainer) return;
@@ -38,7 +76,8 @@
 </script>
 
 <div class="poster" bind:this={posterContainer}>
-	<BackgroundShader container={posterContainer} />
+	<BackgroundShader container={posterContainer} params={shaderParams} {imageSrc} />
+	<ShaderGUI bind:params={shaderParams} bind:imageSrc />
 	<div class="poster-content" style="transform: scale({scaleFactor});">
 		<!-- Names -->
 		<div class="names-section">
@@ -140,6 +179,8 @@
 		text-transform: uppercase;
 		opacity: 0;
 		transition: opacity 0.3s ease;
+		/* Displaced letterform shadow - 50% transparent */
+		text-shadow: 4px 4px 0px rgba(15, 26, 58, 0.5);
 	}
 
 	.name.loaded {
@@ -192,6 +233,8 @@
 		white-space: nowrap;
 		opacity: 0;
 		transition: opacity 0.3s ease;
+		/* Displaced letterform shadow - 50% transparent */
+		text-shadow: 5px 5px 0px rgba(15, 26, 58, 0.5);
 	}
 
 	.headline.loaded {
