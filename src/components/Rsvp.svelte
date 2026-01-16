@@ -6,7 +6,7 @@
 
     const dispatch = createEventDispatcher();
 
-    let fontLoaded = false;
+    let fontsLoaded = false;
     let rsvpContainer;
     let formData = {
         name: '',
@@ -20,9 +20,8 @@
     let isSubmitting = false;
 
     onMount(() => {
-        // Wait for Google Fonts to load
         document.fonts.ready.then(() => {
-            fontLoaded = true;
+            fontsLoaded = true;
         });
     });
 
@@ -55,46 +54,63 @@
 
 <div class="rsvp-container" bind:this={rsvpContainer}>
     <form on:submit={handleSubmit}>
-        <div class="banner">
-            <h1 class:font-loaded={fontLoaded}>FEELING THE LOVE?</h1>
-        </div>
-        <p class="subtitle" class:font-loaded={fontLoaded}>SEND US YOUR DEETS!</p>
+        <h1 class:loaded={fontsLoaded}>FEELING THE LOVE?</h1>
+        <p class="subtitle" class:loaded={fontsLoaded}>SEND US YOUR DEETS</p>
 
         {#if form?.error}
             <p class="error-message">{form?.error}</p>
         {/if}
 
-        {#if form?.success}
-            <p class="success-message">Excited to see you! More details to follow.</p>
+        {#if success}
+            <p class="success-message" class:loaded={fontsLoaded}>EXCITED TO SEE YOU!</p>
         {/if}
 
         <div class="form-field">
-            <label for="name" class:font-loaded={fontLoaded}>NAME</label>
+            <label for="name" class:loaded={fontsLoaded}>NAME</label>
             <input id="name" name="name" type="text" required bind:value={formData.name}>
         </div>
         <div class="form-field">
-            <label for="phonenumber" class:font-loaded={fontLoaded}>PHONE NUMBER</label>
+            <label for="phonenumber" class:loaded={fontsLoaded}>PHONE NUMBER</label>
             <input id="phonenumber" name="phonenumber" type="tel" required bind:value={formData.phonenumber}>
         </div>
         <div class="form-field">
-            <label for="email" class:font-loaded={fontLoaded}>EMAIL</label>
+            <label for="email" class:loaded={fontsLoaded}>EMAIL</label>
             <input id="email" name="email" type="email" required bind:value={formData.email}>
         </div>
         <div class="form-field">
-            <label for="plusones" class:font-loaded={fontLoaded}>PLUS ONE NAME</label>
+            <label for="plusones" class:loaded={fontsLoaded}>PLUS ONE NAME</label>
             <input id="plusones" name="plusones" type="text" bind:value={formData.plusones}>
         </div>
         <div class="form-field">
-            <label for="dietary" class:font-loaded={fontLoaded}>DIETARY REQUIREMENTS</label>
+            <label for="dietary" class:loaded={fontsLoaded}>DIETARY REQUIREMENTS</label>
             <textarea id="dietary" name="dietary" bind:value={formData.dietary}></textarea>
         </div>
-        <button type="submit" class:font-loaded={fontLoaded} class:submitting={isSubmitting} disabled={isSubmitting}>
+        <button type="submit" class:loaded={fontsLoaded} class:submitting={isSubmitting} disabled={isSubmitting}>
             <span>{isSubmitting ? '' : 'RSVP'}</span>
         </button>
     </form>
 </div>
 
 <style>
+    /* Match Poster.svelte font faces */
+    @font-face {
+        font-family: 'Horizon';
+        src: url('/fonts/horizon.c7c834b7fe209bdc0a30119a6b1d26ae.b3ebf62f8ff8ae950dea860d56c49d1b.woff2') format('woff2');
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'CondensedBold';
+        src: url('/fonts/scr-nsevbd-reg.3f1bb23215a22e898f7272aa2.4e21acea96a3d8e9d18d910b961567bb.woff2') format('woff2');
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'CondensedRegular';
+        src: url('/fonts/scr-nsev-reg.039ecb79bbf7e9fd5981a06a01c.28e686f1a1e6846cf246683ff0cd3181.woff2') format('woff2');
+        font-display: swap;
+    }
+
     .rsvp-container {
         display: flex;
         justify-content: center;
@@ -106,143 +122,168 @@
         pointer-events: none;
     }
 
-    .success-message {
-        color: #4CAF50;
-        text-align: center;
-        margin-top: 5px;
-        font-size: 12px;
-        font-family: 'Anton', sans-serif;
-    }
-
     form {
         width: 90%;
-        max-width: 320px;
-        background: linear-gradient(180deg, #3A5B8C 0%, #6B4B7C 30%, #C94B7C 60%, #E58632 100%);
-        border: 2px solid #E58632;
-        border-radius: 20px;
-        box-shadow: 0 4px 30px rgba(229, 134, 50, 0.3);
+        max-width: 380px;
+        background: #101830;
+        border: 3px solid #e58632;
+        border-radius: 8px;
+        box-shadow:
+            0 0 40px rgba(229, 134, 50, 0.2),
+            inset 0 0 80px rgba(16, 24, 48, 0.5);
         overflow: hidden;
         z-index: 1000;
-        padding: 15px;
+        padding: 32px 28px;
         display: flex;
         flex-direction: column;
         align-items: center;
         pointer-events: auto;
     }
 
-    .banner {
-        background-color: #9B2B5A;
-        color: #ffffff;
-        padding: 8px 15px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        text-align: center;
-        border-radius: 10px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
     h1 {
-        font-family: 'Rye', cursive;
-        font-size: 28px;
+        font-family: 'Horizon', 'Rye', cursive;
+        font-size: 26px;
         text-align: center;
-        margin: 0;
-        color: #E58632;
+        margin: 0 0 8px 0;
+        color: #e58632;
+        letter-spacing: 3px;
+        text-transform: uppercase;
         opacity: 0;
         transition: opacity 0.3s ease;
     }
 
-    h1.font-loaded {
+    h1.loaded {
         opacity: 1;
     }
 
     .subtitle {
-        font-family: 'Anton', sans-serif;
-        font-size: 14px;
+        font-family: 'CondensedRegular', 'Anton', sans-serif;
+        font-size: 18px;
         color: #ffffff;
         text-align: center;
-        margin-bottom: 10px;
-        letter-spacing: 2px;
+        margin: 0 0 24px 0;
+        letter-spacing: 4px;
+        text-transform: uppercase;
         opacity: 0;
         transition: opacity 0.3s ease;
     }
 
-    .subtitle.font-loaded {
+    .subtitle.loaded {
         opacity: 1;
+    }
+
+    .success-message {
+        font-family: 'CondensedBold', 'Anton', sans-serif;
+        color: #e58632;
+        text-align: center;
+        margin: 0 0 16px 0;
+        font-size: 16px;
+        letter-spacing: 3px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .success-message.loaded {
+        opacity: 1;
+    }
+
+    .error-message {
+        font-family: 'CondensedRegular', 'Anton', sans-serif;
+        color: #ff6b6b;
+        text-align: center;
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        letter-spacing: 2px;
     }
 
     .form-field {
         width: 100%;
-        margin-bottom: 10px;
+        margin-bottom: 16px;
         box-sizing: border-box;
     }
 
     label {
-        font-family: 'Anton', sans-serif;
+        font-family: 'CondensedRegular', 'Anton', sans-serif;
         display: block;
-        margin-bottom: 2px;
+        margin-bottom: 6px;
         color: #ffffff;
-        font-size: 12px;
-        letter-spacing: 1px;
+        font-size: 14px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
         opacity: 0;
         transition: opacity 0.3s ease;
     }
 
-    label.font-loaded {
+    label.loaded {
         opacity: 1;
     }
 
     input, textarea {
         width: 100%;
-        padding: 8px;
-        border: 2px solid #9B2B5A;
-        border-radius: 8px;
-        background-color: rgba(255, 255, 255, 0.95);
-        font-size: 14px;
+        padding: 12px 14px;
+        border: 2px solid rgba(229, 134, 50, 0.4);
+        border-radius: 4px;
+        background-color: rgba(16, 24, 48, 0.8);
+        color: #ffffff;
+        font-size: 16px;
         box-sizing: border-box;
-        font-family: 'Anton', sans-serif;
+        font-family: 'CondensedRegular', 'Anton', sans-serif;
+        letter-spacing: 1px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input::placeholder, textarea::placeholder {
+        color: rgba(255, 255, 255, 0.3);
     }
 
     input:focus, textarea:focus {
         outline: none;
-        border-color: #E58632;
-        box-shadow: 0 0 8px rgba(229, 134, 50, 0.4);
+        border-color: #e58632;
+        box-shadow: 0 0 12px rgba(229, 134, 50, 0.3);
     }
 
     textarea {
-        height: 60px;
+        height: 80px;
         resize: vertical;
+        min-height: 60px;
     }
 
     button {
         width: 100%;
-        height: 50px;
-        margin-top: 10px;
-        background-color: #E58632;
-        border: 2px solid #9B2B5A;
-        border-radius: 25px;
+        height: 52px;
+        margin-top: 8px;
+        background: transparent;
+        border: 2px solid #e58632;
+        border-radius: 4px;
         cursor: pointer;
         position: relative;
         padding: 0;
         display: flex;
         justify-content: center;
         align-items: center;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
         -webkit-appearance: none;
+    }
+
+    button:hover:not(:disabled) {
+        background: rgba(229, 134, 50, 0.1);
+        transform: scale(1.02);
+        box-shadow: 0 0 20px rgba(229, 134, 50, 0.3);
     }
 
     button.submitting {
         background-image: url('/assets/disco-ball.svg');
-        background-size: 40px 40px;
+        background-size: 36px 36px;
         background-repeat: no-repeat;
         background-position: center;
-        background-color: #9B2B5A;
+        background-color: rgba(229, 134, 50, 0.1);
         animation: spin 2s linear infinite;
         -webkit-animation: spin 2s linear infinite;
     }
 
     @keyframes spin {
-        0% { transform: rotate(0deg); -webkit-transform: rotate(0deg); }
-        100% { transform: rotate(360deg); -webkit-transform: rotate(360deg); }
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
     @-webkit-keyframes spin {
@@ -252,14 +293,14 @@
 
     button:disabled {
         cursor: not-allowed;
-        opacity: 0.8;
+        opacity: 0.7;
     }
 
     button span {
-        font-family: 'Anton', sans-serif;
-        color: #1a1a1a;
-        font-size: 18px;
-        letter-spacing: 2px;
+        font-family: 'CondensedBold', 'Anton', sans-serif;
+        color: #e58632;
+        font-size: 20px;
+        letter-spacing: 4px;
         transition: opacity 0.3s ease;
     }
 
@@ -267,20 +308,7 @@
         opacity: 0;
     }
 
-    button:hover:not(:disabled) {
-        transform: scale(1.02);
-        box-shadow: 0 4px 15px rgba(229, 134, 50, 0.4);
-    }
-
-    .error-message {
-        font-family: 'Anton', sans-serif;
-        color: #ff6b6b;
-        text-align: center;
-        margin-top: 5px;
-        font-size: 12px;
-    }
-
-    .font-loaded {
+    button.loaded span {
         opacity: 1;
     }
 </style>

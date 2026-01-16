@@ -2,29 +2,18 @@
     import { onMount } from 'svelte';
     import Poster from '../components/Poster.svelte';
     import Rsvp from '../components/Rsvp.svelte';
-    import PosterDebugGUI from '../components/PosterDebugGUI.svelte';
     import { fade } from 'svelte/transition';
 
     let showRsvp = false;
     let showThankYou = false;
     let isLoaded = false;
     let rsvpLoaded = false;
-    let showDebugGUI = false;
 
     onMount(() => {
         // Preload the RSVP component
         setTimeout(() => {
             rsvpLoaded = true;
         }, 1000);
-
-        // Toggle debug GUI with 'D' key
-        function handleKeydown(e) {
-            if (e.key === 'd' || e.key === 'D') {
-                showDebugGUI = !showDebugGUI;
-            }
-        }
-        window.addEventListener('keydown', handleKeydown);
-        return () => window.removeEventListener('keydown', handleKeydown);
     });
 
     function handleLoaded() {
@@ -85,12 +74,6 @@
         <p class="font-body">More details to follow.</p>
     </div>
     {/if}
-
-    <PosterDebugGUI visible={showDebugGUI} />
-
-    {#if showDebugGUI}
-    <div class="debug-hint">Press 'D' to hide GUI</div>
-    {/if}
 </main>
 
 <style>
@@ -124,8 +107,9 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        /* Deep dark background matching Canva frame */
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+        /* Wall background for poster */
+        background: url('/assets/bg2.jpg') center center / cover no-repeat;
+        background-color: #1a1a2e;
     }
 
     .modal {
@@ -224,18 +208,5 @@
 
     .font-body {
         font-family: 'Anton', sans-serif;
-    }
-
-    .debug-hint {
-        position: fixed;
-        bottom: 10px;
-        right: 10px;
-        background: rgba(0,0,0,0.7);
-        color: #fff;
-        padding: 8px 16px;
-        border-radius: 4px;
-        font-family: monospace;
-        font-size: 12px;
-        z-index: 9999;
     }
 </style>

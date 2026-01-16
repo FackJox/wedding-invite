@@ -9,16 +9,6 @@
 	const dispatch = createEventDispatcher();
 
 	let fontsLoaded = false;
-	let assetsLoaded = false;
-
-	function preloadImage(src) {
-		return new Promise((resolve, reject) => {
-			const img = new Image();
-			img.onload = () => resolve(img);
-			img.onerror = reject;
-			img.src = src;
-		});
-	}
 
 	function updateScale() {
 		if (!posterContainer) return;
@@ -34,21 +24,8 @@
 		// Wait for fonts to load
 		document.fonts.ready.then(() => {
 			fontsLoaded = true;
-			checkAllLoaded();
+			dispatch('loaded');
 		});
-
-		const assetUrls = ['/assets/poster-bg.png'];
-
-		Promise.all(assetUrls.map(preloadImage))
-			.then(() => {
-				assetsLoaded = true;
-				checkAllLoaded();
-			})
-			.catch((error) => {
-				console.error('Error loading assets:', error);
-				assetsLoaded = true;
-				checkAllLoaded();
-			});
 
 		updateScale();
 		window.addEventListener('resize', updateScale);
@@ -57,18 +34,9 @@
 			window.removeEventListener('resize', updateScale);
 		};
 	});
-
-	function checkAllLoaded() {
-		if (fontsLoaded && assetsLoaded) {
-			dispatch('loaded');
-		}
-	}
 </script>
 
 <div class="poster" bind:this={posterContainer}>
-	<!-- Reference image overlay - only visible when GUI sets the variable -->
-	<div class="reference-overlay" style="transform: scale({scaleFactor}); opacity: var(--reference-opacity, 0); visibility: var(--reference-visibility, hidden);"></div>
-
 	<div class="poster-content" style="transform: scale({scaleFactor});">
 		<!-- Names -->
 		<div class="names-section">
@@ -139,9 +107,7 @@
 		overflow: hidden;
 		border-radius: 4px;
 		box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
-		background-image: url('/assets/poster-bg.png');
-		background-size: cover;
-		background-position: center;
+		background: #101830;
 	}
 
 	.poster-content {
@@ -287,20 +253,5 @@
 
 	.cta-button:hover {
 		transform: scale(1.05);
-	}
-
-	/* Reference image overlay - controlled via inline CSS variables from GUI */
-	.reference-overlay {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 1133px;
-		height: 1600px;
-		transform-origin: top left;
-		background-image: url('/assets/reference.png');
-		background-size: cover;
-		background-position: center;
-		pointer-events: none;
-		z-index: 100;
 	}
 </style>
