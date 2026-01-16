@@ -1,5 +1,6 @@
 <script>
 	import { onMount, createEventDispatcher } from 'svelte';
+	import BackgroundShader from './BackgroundShader.svelte';
 
 	let posterContainer;
 	let scaleFactor = 1;
@@ -37,6 +38,7 @@
 </script>
 
 <div class="poster" bind:this={posterContainer}>
+	<BackgroundShader container={posterContainer} />
 	<div class="poster-content" style="transform: scale({scaleFactor});">
 		<!-- Names -->
 		<div class="names-section">
@@ -107,7 +109,6 @@
 		overflow: hidden;
 		border-radius: 4px;
 		box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
-		background: #101830;
 	}
 
 	.poster-content {

@@ -124,16 +124,14 @@
 
     form {
         width: 90%;
-        max-width: 380px;
+        max-width: 320px;
         background: #101830;
-        border: 3px solid #e58632;
-        border-radius: 8px;
-        box-shadow:
-            0 0 40px rgba(229, 134, 50, 0.2),
-            inset 0 0 80px rgba(16, 24, 48, 0.5);
+        border: 2px solid #e58632;
+        border-radius: 6px;
+        box-shadow: 0 0 30px rgba(229, 134, 50, 0.2);
         overflow: hidden;
         z-index: 1000;
-        padding: 32px 28px;
+        padding: 15px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -142,11 +140,11 @@
 
     h1 {
         font-family: 'Horizon', 'Rye', cursive;
-        font-size: 26px;
+        font-size: 20px;
         text-align: center;
-        margin: 0 0 8px 0;
+        margin: 0 0 4px 0;
         color: #e58632;
-        letter-spacing: 3px;
+        letter-spacing: 2px;
         text-transform: uppercase;
         opacity: 0;
         transition: opacity 0.3s ease;
@@ -158,11 +156,11 @@
 
     .subtitle {
         font-family: 'CondensedRegular', 'Anton', sans-serif;
-        font-size: 18px;
+        font-size: 14px;
         color: #ffffff;
         text-align: center;
-        margin: 0 0 24px 0;
-        letter-spacing: 4px;
+        margin: 0 0 12px 0;
+        letter-spacing: 2px;
         text-transform: uppercase;
         opacity: 0;
         transition: opacity 0.3s ease;
@@ -176,9 +174,9 @@
         font-family: 'CondensedBold', 'Anton', sans-serif;
         color: #e58632;
         text-align: center;
-        margin: 0 0 16px 0;
-        font-size: 16px;
-        letter-spacing: 3px;
+        margin: 0 0 10px 0;
+        font-size: 12px;
+        letter-spacing: 2px;
         opacity: 0;
         transition: opacity 0.3s ease;
     }
@@ -191,24 +189,24 @@
         font-family: 'CondensedRegular', 'Anton', sans-serif;
         color: #ff6b6b;
         text-align: center;
-        margin: 0 0 16px 0;
-        font-size: 14px;
-        letter-spacing: 2px;
+        margin: 0 0 10px 0;
+        font-size: 12px;
+        letter-spacing: 1px;
     }
 
     .form-field {
         width: 100%;
-        margin-bottom: 16px;
+        margin-bottom: 10px;
         box-sizing: border-box;
     }
 
     label {
         font-family: 'CondensedRegular', 'Anton', sans-serif;
         display: block;
-        margin-bottom: 6px;
+        margin-bottom: 2px;
         color: #ffffff;
-        font-size: 14px;
-        letter-spacing: 3px;
+        font-size: 12px;
+        letter-spacing: 2px;
         text-transform: uppercase;
         opacity: 0;
         transition: opacity 0.3s ease;
@@ -220,12 +218,12 @@
 
     input, textarea {
         width: 100%;
-        padding: 12px 14px;
+        padding: 8px;
         border: 2px solid rgba(229, 134, 50, 0.4);
         border-radius: 4px;
         background-color: rgba(16, 24, 48, 0.8);
         color: #ffffff;
-        font-size: 16px;
+        font-size: 14px;
         box-sizing: border-box;
         font-family: 'CondensedRegular', 'Anton', sans-serif;
         letter-spacing: 1px;
@@ -243,15 +241,15 @@
     }
 
     textarea {
-        height: 80px;
+        height: 60px;
         resize: vertical;
-        min-height: 60px;
+        min-height: 50px;
     }
 
     button {
         width: 100%;
-        height: 52px;
-        margin-top: 8px;
+        height: 50px;
+        margin-top: 10px;
         background: transparent;
         border: 2px solid #e58632;
         border-radius: 4px;
@@ -299,8 +297,8 @@
     button span {
         font-family: 'CondensedBold', 'Anton', sans-serif;
         color: #e58632;
-        font-size: 20px;
-        letter-spacing: 4px;
+        font-size: 18px;
+        letter-spacing: 2px;
         transition: opacity 0.3s ease;
     }
 

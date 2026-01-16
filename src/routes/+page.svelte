@@ -107,7 +107,6 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        /* Wall background for poster */
         background: url('/assets/bg2.jpg') center center / cover no-repeat;
         background-color: #1a1a2e;
     }
