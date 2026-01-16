@@ -1,26 +1,35 @@
 <script>
     import { onMount } from 'svelte';
-    import Face from '../components/Face.svelte';
     import Poster from '../components/Poster.svelte';
     import Rsvp from '../components/Rsvp.svelte';
+    import PosterDebugGUI from '../components/PosterDebugGUI.svelte';
     import { fade } from 'svelte/transition';
 
     let showRsvp = false;
     let showThankYou = false;
     let isLoaded = false;
     let rsvpLoaded = false;
+    let showDebugGUI = false;
 
     onMount(() => {
-    // Preload the RSVP component
-    setTimeout(() => {
-      rsvpLoaded = true;
-    }, 1000); // Delay for 1 second to ensure other components load first
-  });
+        // Preload the RSVP component
+        setTimeout(() => {
+            rsvpLoaded = true;
+        }, 1000);
 
+        // Toggle debug GUI with 'D' key
+        function handleKeydown(e) {
+            if (e.key === 'd' || e.key === 'D') {
+                showDebugGUI = !showDebugGUI;
+            }
+        }
+        window.addEventListener('keydown', handleKeydown);
+        return () => window.removeEventListener('keydown', handleKeydown);
+    });
 
     function handleLoaded() {
         console.log('Poster component loaded');
-        const minLoadTime = 1200; // 1.2 seconds minimum loading time
+        const minLoadTime = 1200;
         const startTime = Date.now();
         const elapsedTime = Date.now() - startTime;
 
@@ -33,60 +42,55 @@
         }
     }
 
-    
-   
-    console.log("🚀 ~ isLoaded:", isLoaded)
-
     function toggleRsvp() {
         showRsvp = !showRsvp;
     }
 
     function handleFormSuccess() {
         console.log('handleFormSuccess called');
-
         showRsvp = false;
         showThankYou = true;
         setTimeout(() => {
-            console.log('Timeout callback executed');
-
             showThankYou = false;
         }, 10000);
     }
 
     function handleModalClick(event) {
-    // Check if the click target is the modal background (not its children)
-    if (event.currentTarget === event.target) {
-        showRsvp = false;
+        if (event.currentTarget === event.target) {
+            showRsvp = false;
+        }
     }
-}
 </script>
 
 <main>
     {#if !isLoaded}
     <div class="loader" transition:fade={{ duration: 500 }}>
-        <img src="/assets/ogface.svg" alt="Loading..." />
+        <img src="/assets/disco-ball.svg" alt="Loading..." />
     </div>
     {/if}
 
-<Poster on:loaded={handleLoaded} on:openRsvp={toggleRsvp} />
+    <Poster on:loaded={handleLoaded} on:openRsvp={toggleRsvp} />
 
-    <!-- <Face /> -->
-    
     {#if rsvpLoaded}
     <div class="rsvp-preload" class:show={showRsvp}>
         <div class="modal" transition:fade on:click|self={handleModalClick}>
             <Rsvp on:success={handleFormSuccess} />
-      </div>
+        </div>
     </div>
-  {/if}
+    {/if}
 
     {#if showThankYou}
     <div class="thank-you" transition:fade>
-        <h2 class="font-Zuume">Excited to see you! </h2>
-        <p class="font-Bern">More details to follow.</p>
+        <h2 class="font-headline">Excited to see you!</h2>
+        <p class="font-body">More details to follow.</p>
     </div>
-{/if}
+    {/if}
 
+    <PosterDebugGUI visible={showDebugGUI} />
+
+    {#if showDebugGUI}
+    <div class="debug-hint">Press 'D' to hide GUI</div>
+    {/if}
 </main>
 
 <style>
@@ -96,70 +100,58 @@
         overflow: hidden;
     }
 
-      /* Add these font-face declarations if they're not already in your global styles */
-  @font-face {
-    font-family: 'Zuume';
-    src: url('/zuume.woff2') format('woff2');
-    font-display: swap;
-  }
+    .rsvp-preload {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
 
-  @font-face {
-    font-family: 'Bernoru';
-    src: url('/bernoru.woff2') format('woff2');
-    font-display: swap;
-  }
+    .rsvp-preload.show {
+        display: block;
+        z-index: 1000;
+    }
 
-  .rsvp-preload {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-  }
-
-  .rsvp-preload.show {
-    display: block;
-    z-index: 1000;
-  }
-
-	/* Fill the entire viewport and center children */
-	main {
-		width: 100vw;
-		height: 100vh;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-        background-image: url('/assets/bg2.jpg');
-	}
+    /* Fill the entire viewport and center children */
+    main {
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        /* Deep dark background matching Canva frame */
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+    }
 
     .modal {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0.5);
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		z-index: 1000;
-	}
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
 
-     .thank-you {
+    .thank-you {
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
         width: 90%;
         max-width: 320px;
-        background-color: #343233;
-        border: 2px solid #FEFA99;
+        background: linear-gradient(180deg, #3A5B8C 0%, #C94B7C 50%, #E58632 100%);
+        border: 2px solid #E58632;
         border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(254, 250, 153, 0.2);
+        box-shadow: 0 4px 30px rgba(229, 134, 50, 0.3);
         overflow: hidden;
         z-index: 1001;
         padding: 15px;
@@ -179,22 +171,26 @@
     }
 
     .thank-you p {
+        font-family: 'Anton', sans-serif;
         font-size: 14px;
-        color: #FEFA99;
+        color: #ffffff;
         text-align: center;
         margin-bottom: 10px;
+        letter-spacing: 1px;
     }
 
     .thank-you h2 {
-        font-size: 50px;
+        font-family: 'Rye', cursive;
+        font-size: 36px;
         text-align: center;
         margin: 0;
-        background-color: #FEFA99;
-        color: #343233;
-        padding: 6px 3px;
-        box-shadow: 0 2px 4px rgba(254, 250, 153, 0.2);
+        background-color: #E58632;
+        color: #1a1a1a;
+        padding: 10px 15px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         width: 100%;
         box-sizing: border-box;
+        border-radius: 10px;
     }
 
     .loader {
@@ -203,7 +199,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: #FEFA99;
+        background: linear-gradient(180deg, #3A5B8C 0%, #C94B7C 50%, #E58632 100%);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -211,9 +207,9 @@
     }
 
     .loader img {
-        width: 100px;
-        height: 100px;
-        animation: spin 2s linear infinite;
+        width: 120px;
+        height: 120px;
+        animation: spin 3s linear infinite;
     }
 
     @keyframes spin {
@@ -221,12 +217,25 @@
         100% { transform: rotate(360deg); }
     }
 
-    /* Add these classes for font styling */
-    .font-Zuume {
-        font-family: 'Zuume', sans-serif;
+    /* Font styling classes */
+    .font-headline {
+        font-family: 'Rye', cursive;
     }
 
-    .font-Bern {
-        font-family: 'Bernoru', sans-serif;
+    .font-body {
+        font-family: 'Anton', sans-serif;
+    }
+
+    .debug-hint {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+        z-index: 9999;
     }
 </style>
