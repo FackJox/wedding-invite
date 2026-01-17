@@ -75,7 +75,7 @@
 	let sourceTexture;
 
 	// Main program uniform locations
-	let uTextureLoc, uTimeLoc, uOffsetLoc, uResolutionLoc;
+	let uTextureLoc, uTimeLoc, uAnimTimeLoc, uOffsetLoc, uResolutionLoc;
 	let uRotationSpeedLoc, uTimeScaleLoc;
 	let uBlobStrengthLoc, uBlobFreqLoc;
 	let uSwirlStrengthLoc, uSwirlFalloffLoc, uSwirlFreqLoc, uSwirlSpeedLoc;
@@ -99,6 +99,9 @@
 	let startTime = 0;
 	let panOffset = { x: 0, y: 0 };
 	let panDirection = { x: 0.894, y: 0.447 };
+
+	// Accumulated animation time (integrates speedMod properly)
+	let accumulatedAnimTime = 0;
 
 	// Debug tracking
 	let lastTimestamp = 0;
@@ -134,6 +137,7 @@
 
 		uniform sampler2D uTexture;
 		uniform float uTime;
+		uniform float uAnimTime;  // Pre-accumulated animation time (integrates speedMod properly)
 		uniform vec2 uOffset;
 		uniform vec2 uResolution;
 
@@ -199,13 +203,13 @@
 		void main() {
 			vec2 uv = vUv;
 
-			// Speed modulation: lerp between full speed and 1/3 speed over 4 second cycles
-			float speedMod = mix(0.333, 1.0, 0.5 + 0.5 * sin(uTime * 3.14159 / 4.0));
-
-			float rotationAngle = uTime * uRotationSpeed * speedMod;
+			// Use pre-accumulated animation time (speedMod integration done on CPU)
+			// This fixes the bug where t = uTime * speedMod would cause acceleration
+			// because instantaneous speedMod was multiplied by total elapsed time
+			float rotationAngle = uAnimTime * uRotationSpeed;
 			uv = rotate(uv - 0.5, rotationAngle) + 0.5;
 
-			float t = uTime * uTimeScale * speedMod;
+			float t = uAnimTime * uTimeScale;
 
 			float blob1 = sin(uv.x * uBlobFreq.x + t * 0.7) * cos(uv.y * uBlobFreq.y + t * 0.5);
 			float blob2 = cos(uv.x * uBlobFreq.x * 1.2 - t * 0.6) * sin(uv.y * uBlobFreq.y * 1.17 + t * 0.8);
@@ -237,7 +241,7 @@
 			uv += distort;
 			uv += uOffset;
 
-			float breathe = sin(uTime * uBreatheSpeed * speedMod) * uBreatheAmount;
+			float breathe = sin(uAnimTime * uBreatheSpeed) * uBreatheAmount;
 			float scale = uBaseScale + breathe;
 			uv = (uv - 0.5) * scale + 0.5;
 
@@ -438,6 +442,7 @@
 
 		uTextureLoc = gl.getUniformLocation(mainProgram, 'uTexture');
 		uTimeLoc = gl.getUniformLocation(mainProgram, 'uTime');
+		uAnimTimeLoc = gl.getUniformLocation(mainProgram, 'uAnimTime');
 		uOffsetLoc = gl.getUniformLocation(mainProgram, 'uOffset');
 		uResolutionLoc = gl.getUniformLocation(mainProgram, 'uResolution');
 		uRotationSpeedLoc = gl.getUniformLocation(mainProgram, 'uRotationSpeed');
@@ -576,11 +581,18 @@
 
 		const time = ((timestamp - startTime) / 1000) % 628;
 
-		// Calculate ALL shader time values in JS for diagnostics
+		// Calculate speedMod (oscillates between 0.333 and 1.0 over 8-second cycles)
 		const speedMod = 0.333 + (1.0 - 0.333) * (0.5 + 0.5 * Math.sin(time * Math.PI / 4.0));
-		const t = time * params.timeScale * speedMod; // Internal shader time
-		const rotationAngle = time * params.rotationSpeed * speedMod;
-		const breathePhase = time * params.breatheSpeed * speedMod;
+
+		// FIX: Accumulate animation time properly instead of multiplying instantaneous speedMod by total time
+		// This was the bug: t = time * speedMod would cause acceleration because when speedMod
+		// goes from low to high, it multiplies the ENTIRE elapsed time by the high value
+		accumulatedAnimTime += deltaTime * speedMod;
+
+		// Now t is calculated from the properly accumulated time
+		const t = accumulatedAnimTime * params.timeScale;
+		const rotationAngle = accumulatedAnimTime * params.rotationSpeed;
+		const breathePhase = accumulatedAnimTime * params.breatheSpeed;
 
 		// Swirl centers (these move with t)
 		const swirlCenter1X = 0.3 + Math.sin(t * 0.5) * 0.2;
@@ -636,8 +648,9 @@
 			console.log(`[BG-DIAG:${instanceId}] speedMod (current):`, speedMod.toFixed(4), `(should be 0.333-1.0)`);
 			console.log(`[BG-DIAG:${instanceId}] speedMod range seen: [${minSpeedModSeen.toFixed(4)}, ${maxSpeedModSeen.toFixed(4)}]`);
 			console.log(`[BG-DIAG:${instanceId}] ------- SHADER TIME VALUES -------`);
-			console.log(`[BG-DIAG:${instanceId}] uTime (sent to shader):`, time.toFixed(4));
-			console.log(`[BG-DIAG:${instanceId}] t (internal time = uTime*timeScale*speedMod):`, t.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] uTime (real time, wraps at 628):`, time.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] uAnimTime (accumulated):`, accumulatedAnimTime.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] t (internal time = uAnimTime*timeScale):`, t.toFixed(4));
 			console.log(`[BG-DIAG:${instanceId}] rotationAngle:`, rotationAngle.toFixed(4), `rad (${(rotationAngle * 180 / Math.PI).toFixed(1)}°)`);
 			console.log(`[BG-DIAG:${instanceId}] breathePhase:`, breathePhase.toFixed(4));
 			console.log(`[BG-DIAG:${instanceId}] ------- ANIMATION PHASES -------`);
@@ -649,10 +662,9 @@
 			console.log(`[BG-DIAG:${instanceId}] ------- SWIRL CENTERS -------`);
 			console.log(`[BG-DIAG:${instanceId}] center1: (${swirlCenter1X.toFixed(4)}, ${swirlCenter1Y.toFixed(4)})`);
 			console.log(`[BG-DIAG:${instanceId}] center2: (${swirlCenter2X.toFixed(4)}, ${swirlCenter2Y.toFixed(4)})`);
-			console.log(`[BG-DIAG:${instanceId}] ------- EFFECTIVE SPEEDS -------`);
-			console.log(`[BG-DIAG:${instanceId}] Effective rotation speed:`, (params.rotationSpeed * speedMod).toFixed(6));
-			console.log(`[BG-DIAG:${instanceId}] Effective timeScale:`, (params.timeScale * speedMod).toFixed(6));
-			console.log(`[BG-DIAG:${instanceId}] Effective breatheSpeed:`, (params.breatheSpeed * speedMod).toFixed(6));
+			console.log(`[BG-DIAG:${instanceId}] ------- EFFECTIVE SPEEDS (via accumulation) -------`);
+			console.log(`[BG-DIAG:${instanceId}] Current speedMod effect:`, speedMod.toFixed(4), `(time passes at ${(speedMod * 100).toFixed(0)}% speed)`);
+			console.log(`[BG-DIAG:${instanceId}] Avg speedMod so far:`, (accumulatedAnimTime / (time || 1)).toFixed(4), `(should avg ~0.667)`);
 			console.log(`[BG-DIAG:${instanceId}] ------- T RATE ANALYSIS -------`);
 			console.log(`[BG-DIAG:${instanceId}] t rate (dt/dRealTime):`, tRate.toFixed(6));
 			console.log(`[BG-DIAG:${instanceId}] Expected avg rate:`, (params.timeScale * 0.667).toFixed(6), '(timeScale * avgSpeedMod)');
@@ -738,6 +750,7 @@
 		gl.uniform1i(uTextureLoc, 0);
 
 		gl.uniform1f(uTimeLoc, time);
+		gl.uniform1f(uAnimTimeLoc, accumulatedAnimTime);
 		gl.uniform2f(uOffsetLoc, panOffset.x, panOffset.y);
 		gl.uniform2f(uResolutionLoc, width, height);
 		gl.uniform1f(uRotationSpeedLoc, params.rotationSpeed);

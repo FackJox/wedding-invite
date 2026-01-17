@@ -6,8 +6,9 @@
 	import { Line2 } from 'three/addons/lines/Line2.js';
 	import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 	import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
-	import { EffectComposer, RenderPass, EffectPass, BloomEffect } from 'postprocessing';
+	import { EffectComposer, RenderPass, EffectPass, BloomEffect, BlendFunction } from 'postprocessing';
 	import { CrtAsciiEffect } from '$lib/shaders/CrtAsciiEffect.js';
+	import { ChromaticGlitchEffect } from '$lib/shaders/ChromaticGlitchEffect.js';
 
 	// Effect parameters - passed from parent (no default to avoid creating separate object)
 	export let effectParams;
@@ -15,7 +16,7 @@
 	// Disco ball color - matching reference red/coral
 	const DISCO_COLOR = 0xe05050;
 	const SPARKLE_COLOR = 0xe05050;
-	const LINE_WIDTH = 2.5; // Adjustable line thickness
+	const LINE_WIDTH = 3; // Adjustable line thickness
 
 	let canvas;
 	let mounted = false;
@@ -31,7 +32,11 @@
 
 	// Effect references
 	let crtAsciiEffect = null;
+	let chromaticGlitchEffect = null;
 	let bloomEffect = null;
+	let asciiPass = null;
+	let glitchPass = null;
+	let currentEffectMode = null;
 
 	// Clipping plane to hide back half of disco ball and rings
 	const clippingPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
@@ -65,6 +70,8 @@
 		renderer.toneMapping = THREE.ACESFilmicToneMapping;
 		renderer.toneMappingExposure = 1.2;
 		renderer.localClippingEnabled = true;
+		renderer.setClearColor(0x000000, 0); // Transparent background
+		renderer.autoClearAlpha = true;
 
 		// Lighting
 		const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -78,12 +85,29 @@
 		rimLight.position.set(-2, -1, 3);
 		scene.add(rimLight);
 
-		// Post-processing setup
-		composer = new EffectComposer(renderer);
+		// Post-processing setup with alpha support
+		// HalfFloatType better preserves alpha channel during processing
+		composer = new EffectComposer(renderer, {
+			frameBufferType: THREE.HalfFloatType
+		});
 		const renderPass = new RenderPass(scene, camera);
+		renderPass.clearAlpha = 0;
 		composer.addPass(renderPass);
 
-		// CRT ASCII Effect
+		// Bloom FIRST - applied to raw render for glow effect around disco ball
+		// Use ADD blend mode to preserve transparency (only adds glow, doesn't fill transparent areas)
+		bloomEffect = new BloomEffect({
+			blendFunction: BlendFunction.ADD,
+			intensity: effectParams.bloomIntensity ?? 2,
+			luminanceThreshold: effectParams.bloomThreshold ?? 0.1,
+			luminanceSmoothing: 0.3,
+			mipmapBlur: true,
+			radius: 0.85
+		});
+		const bloomPass = new EffectPass(camera, bloomEffect);
+		composer.addPass(bloomPass);
+
+		// Create both effects
 		crtAsciiEffect = new CrtAsciiEffect({
 			cellSize: effectParams.cellSize,
 			invert: effectParams.invert,
@@ -103,16 +127,43 @@
 			bloomMix: effectParams.bloomMix
 		});
 
-		// Bloom for glow
-		bloomEffect = new BloomEffect({
-			intensity: effectParams.bloomIntensity,
-			luminanceThreshold: 0.3,
-			luminanceSmoothing: 0.4,
-			mipmapBlur: true
+		chromaticGlitchEffect = new ChromaticGlitchEffect({
+			aberrationAmount: effectParams.aberrationAmount ?? 0.005,
+			aberrationAngle: effectParams.aberrationAngle ?? 0,
+			aberrationAnimated: effectParams.aberrationAnimated ?? true,
+			aberrationSpeed: effectParams.aberrationSpeed ?? 2,
+			glitchIntensity: effectParams.cgGlitchIntensity ?? 0.1,
+			glitchFrequency: effectParams.cgGlitchFrequency ?? 4,
+			blockGlitchIntensity: effectParams.blockGlitchIntensity ?? 0.1,
+			blockGlitchSize: effectParams.blockGlitchSize ?? 20,
+			rgbShiftIntensity: effectParams.rgbShiftIntensity ?? 0.5,
+			scanlineIntensity: effectParams.cgScanlineIntensity ?? 0.1,
+			scanlineCount: effectParams.cgScanlineCount ?? 200,
+			scanlineSpeed: effectParams.scanlineSpeed ?? 0,
+			waveDistortion: effectParams.waveDistortion ?? 0,
+			waveFrequency: effectParams.waveFrequency ?? 10,
+			waveSpeed: effectParams.waveSpeed ?? 1,
+			saturation: effectParams.cgSaturation ?? 1,
+			brightness: effectParams.cgBrightness ?? 0,
+			contrast: effectParams.cgContrast ?? 1,
+			vignetteIntensity: effectParams.cgVignetteIntensity ?? 0.2,
+			vignetteRadius: effectParams.cgVignetteRadius ?? 1.2,
+			noiseIntensity: effectParams.cgNoiseIntensity ?? 0.02,
+			noiseSpeed: effectParams.cgNoiseSpeed ?? 10
 		});
 
-		const effectPass = new EffectPass(camera, crtAsciiEffect, bloomEffect);
-		composer.addPass(effectPass);
+		// Create passes for both effects
+		asciiPass = new EffectPass(camera, crtAsciiEffect);
+		glitchPass = new EffectPass(camera, chromaticGlitchEffect);
+
+		// Add the appropriate pass based on effect mode
+		const effectMode = effectParams.effectMode ?? 'ascii';
+		if (effectMode === 'glitch') {
+			composer.addPass(glitchPass);
+		} else {
+			composer.addPass(asciiPass);
+		}
+		currentEffectMode = effectMode;
 
 		return true;
 	}
@@ -136,8 +187,8 @@
 								uColor: { value: new THREE.Color(DISCO_COLOR) },
 								uShadowStrength: { value: 0.45 },
 								uHighlightStrength: { value: 0.8 },
-								uShadowAngle: { value: -0.5 },
-								uHighlightAngle: { value: 0.5 },
+								uLightX: { value: 0.5 },
+								uLightY: { value: 0.5 },
 								uBaseOpacity: { value: 0.0 }
 							},
 							vertexShader: `
@@ -153,19 +204,19 @@
 								uniform vec3 uColor;
 								uniform float uShadowStrength;
 								uniform float uHighlightStrength;
-								uniform float uShadowAngle;
-								uniform float uHighlightAngle;
+								uniform float uLightX;
+								uniform float uLightY;
 								uniform float uBaseOpacity;
 								varying vec3 vNormal;
 								varying vec3 vPosition;
 								void main() {
-									// Shadow position based on angle (-1 = bottom-left, 1 = top-right)
-									float shadowPos = vPosition.x * (1.0 + uShadowAngle) + vPosition.y * (1.0 - uShadowAngle);
-									float shadow = smoothstep(0.5, -0.8, shadowPos) * uShadowStrength;
+									// Shadow: opposite of light direction
+									float shadowDist = length(vec2(vPosition.x + uLightX, vPosition.y + uLightY));
+									float shadow = (1.0 - smoothstep(0.0, 1.5, shadowDist)) * uShadowStrength;
 
-									// Highlight position based on angle
-									float highlightPos = vPosition.x * (1.0 + uHighlightAngle) + vPosition.y * (1.0 - uHighlightAngle);
-									float highlight = smoothstep(-0.2, 0.8, highlightPos) * uHighlightStrength;
+									// Highlight: aligned with light direction
+									float highlightDist = length(vec2(vPosition.x - uLightX, vPosition.y - uLightY));
+									float highlight = (1.0 - smoothstep(0.0, 1.5, highlightDist)) * uHighlightStrength;
 
 									// Combine: shadow adds opacity, highlight removes it
 									float alpha = uBaseOpacity + shadow - highlight;
@@ -193,7 +244,7 @@
 						// Create LineMaterial with shader injection for position-based alpha fading
 						const lineMaterial = new LineMaterial({
 							color: DISCO_COLOR,
-							linewidth: effectParams.lineWidth ?? LINE_WIDTH,
+							linewidth: effectParams.lineWidth ?? 3,
 							clippingPlanes: [clippingPlane],
 							clipIntersection: false,
 							resolution: new THREE.Vector2(canvas.width, canvas.height),
@@ -203,14 +254,18 @@
 						});
 
 						// Add custom uniforms for fade control
-						lineMaterial.uniforms.lineFadeStart = { value: effectParams.lineFadeStart ?? 0.3 };
+						lineMaterial.uniforms.lineFadeStart = { value: effectParams.lineFadeStart ?? 0.75 };
 						lineMaterial.uniforms.lineFadeEnd = { value: effectParams.lineFadeEnd ?? 1.1 };
+						lineMaterial.uniforms.lightX = { value: effectParams.lightX ?? 0.5 };
+						lineMaterial.uniforms.lightY = { value: effectParams.lightY ?? 0.5 };
 
 						// Inject custom fade logic into the shader
 						lineMaterial.onBeforeCompile = (shader) => {
 							// Add our custom uniforms
 							shader.uniforms.lineFadeStart = lineMaterial.uniforms.lineFadeStart;
 							shader.uniforms.lineFadeEnd = lineMaterial.uniforms.lineFadeEnd;
+							shader.uniforms.lightX = lineMaterial.uniforms.lightX;
+							shader.uniforms.lightY = lineMaterial.uniforms.lightY;
 
 							// Add varying for world position to vertex shader
 							shader.vertexShader = shader.vertexShader.replace(
@@ -232,19 +287,22 @@
 								'void main() {',
 								`uniform float lineFadeStart;
 								uniform float lineFadeEnd;
+								uniform float lightX;
+								uniform float lightY;
 								varying vec3 vWorldPos;
 								void main() {`
 							);
-							// Apply position-based alpha fade before final output
+							// Apply position-based alpha fade along light direction
 							shader.fragmentShader = shader.fragmentShader.replace(
 								'gl_FragColor = vec4( diffuseColor.rgb, alpha );',
-								`// Position-based fading
-								float diagPos = vWorldPos.x + vWorldPos.y;
+								`// Position-based fading along light direction
+								vec2 lightDir = normalize(vec2(lightX, lightY));
+								float projPos = dot(vec2(vWorldPos.x, vWorldPos.y), lightDir);
 								float fadeFactor = 1.0;
-								if (diagPos > lineFadeStart) {
-									fadeFactor = 1.0 - clamp((diagPos - lineFadeStart) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
-								} else if (diagPos < -lineFadeStart) {
-									fadeFactor = clamp((diagPos + lineFadeEnd) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
+								if (projPos > lineFadeStart) {
+									fadeFactor = 1.0 - clamp((projPos - lineFadeStart) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
+								} else if (projPos < -lineFadeStart) {
+									fadeFactor = clamp((projPos + lineFadeEnd) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
 								}
 								gl_FragColor = vec4( diffuseColor.rgb, alpha * fadeFactor );`
 							);
@@ -288,8 +346,8 @@
 				uColor: { value: new THREE.Color(DISCO_COLOR) },
 				uShadowStrength: { value: 0.45 },
 				uHighlightStrength: { value: 0.8 },
-				uShadowAngle: { value: -0.5 },
-				uHighlightAngle: { value: 0.5 },
+				uLightX: { value: 0.5 },
+				uLightY: { value: 0.5 },
 				uBaseOpacity: { value: 0.0 }
 			},
 			vertexShader: `
@@ -305,16 +363,16 @@
 				uniform vec3 uColor;
 				uniform float uShadowStrength;
 				uniform float uHighlightStrength;
-				uniform float uShadowAngle;
-				uniform float uHighlightAngle;
+				uniform float uLightX;
+				uniform float uLightY;
 				uniform float uBaseOpacity;
 				varying vec3 vNormal;
 				varying vec3 vPosition;
 				void main() {
-					float shadowPos = vPosition.x * (1.0 + uShadowAngle) + vPosition.y * (1.0 - uShadowAngle);
-					float shadow = smoothstep(0.5, -0.8, shadowPos) * uShadowStrength;
-					float highlightPos = vPosition.x * (1.0 + uHighlightAngle) + vPosition.y * (1.0 - uHighlightAngle);
-					float highlight = smoothstep(-0.2, 0.8, highlightPos) * uHighlightStrength;
+					float shadowDist = length(vec2(vPosition.x + uLightX, vPosition.y + uLightY));
+					float shadow = (1.0 - smoothstep(0.0, 1.5, shadowDist)) * uShadowStrength;
+					float highlightDist = length(vec2(vPosition.x - uLightX, vPosition.y - uLightY));
+					float highlight = (1.0 - smoothstep(0.0, 1.5, highlightDist)) * uHighlightStrength;
 					float alpha = clamp(uBaseOpacity + shadow - highlight, 0.0, 1.0);
 					gl_FragColor = vec4(uColor, alpha);
 				}
@@ -335,20 +393,24 @@
 
 		const lineMaterial = new LineMaterial({
 			color: DISCO_COLOR,
-			linewidth: effectParams.lineWidth ?? LINE_WIDTH,
+			linewidth: effectParams.lineWidth ?? 3,
 			resolution: new THREE.Vector2(canvas.width, canvas.height),
 			transparent: true,
 			opacity: 1.0
 		});
 
 		// Add custom uniforms for fade control
-		lineMaterial.uniforms.lineFadeStart = { value: effectParams.lineFadeStart ?? 0.3 };
+		lineMaterial.uniforms.lineFadeStart = { value: effectParams.lineFadeStart ?? 0.75 };
 		lineMaterial.uniforms.lineFadeEnd = { value: effectParams.lineFadeEnd ?? 1.1 };
+		lineMaterial.uniforms.lightX = { value: effectParams.lightX ?? 0.5 };
+		lineMaterial.uniforms.lightY = { value: effectParams.lightY ?? 0.5 };
 
 		// Inject custom fade logic into the shader
 		lineMaterial.onBeforeCompile = (shader) => {
 			shader.uniforms.lineFadeStart = lineMaterial.uniforms.lineFadeStart;
 			shader.uniforms.lineFadeEnd = lineMaterial.uniforms.lineFadeEnd;
+			shader.uniforms.lightX = lineMaterial.uniforms.lightX;
+			shader.uniforms.lightY = lineMaterial.uniforms.lightY;
 
 			shader.vertexShader = shader.vertexShader.replace(
 				'void main() {',
@@ -367,17 +429,20 @@
 				'void main() {',
 				`uniform float lineFadeStart;
 				uniform float lineFadeEnd;
+				uniform float lightX;
+				uniform float lightY;
 				varying vec3 vWorldPos;
 				void main() {`
 			);
 			shader.fragmentShader = shader.fragmentShader.replace(
 				'gl_FragColor = vec4( diffuseColor.rgb, alpha );',
-				`float diagPos = vWorldPos.x + vWorldPos.y;
+				`vec2 lightDir = normalize(vec2(lightX, lightY));
+				float projPos = dot(vec2(vWorldPos.x, vWorldPos.y), lightDir);
 				float fadeFactor = 1.0;
-				if (diagPos > lineFadeStart) {
-					fadeFactor = 1.0 - clamp((diagPos - lineFadeStart) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
-				} else if (diagPos < -lineFadeStart) {
-					fadeFactor = clamp((diagPos + lineFadeEnd) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
+				if (projPos > lineFadeStart) {
+					fadeFactor = 1.0 - clamp((projPos - lineFadeStart) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
+				} else if (projPos < -lineFadeStart) {
+					fadeFactor = clamp((projPos + lineFadeEnd) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
 				}
 				gl_FragColor = vec4( diffuseColor.rgb, alpha * fadeFactor );`
 			);
@@ -520,6 +585,9 @@
 		if (crtAsciiEffect) {
 			crtAsciiEffect.setSize(width, height);
 		}
+		if (chromaticGlitchEffect) {
+			chromaticGlitchEffect.setSize(width, height);
+		}
 
 		// Update LineMaterial resolutions (required for proper line width)
 		lineMaterials.forEach(mat => {
@@ -580,12 +648,26 @@
 			}
 		});
 
-		// Update effect params every frame (ensures reactivity works)
-		if (crtAsciiEffect) {
-			// Debug: log params occasionally
-			if (Math.floor(time) % 5 === 0 && Math.floor(time * 10) % 10 === 0) {
-				console.log('Effect params:', effectParams.cellSize, effectParams.asciiStyle, effectParams.scanlineIntensity);
+		// Handle effect mode switching
+		const effectMode = effectParams.effectMode ?? 'ascii';
+		if (effectMode !== currentEffectMode && composer) {
+			// Remove current effect pass and add the new one
+			if (currentEffectMode === 'ascii' && asciiPass) {
+				composer.removePass(asciiPass);
+			} else if (currentEffectMode === 'glitch' && glitchPass) {
+				composer.removePass(glitchPass);
 			}
+
+			if (effectMode === 'glitch' && glitchPass) {
+				composer.addPass(glitchPass);
+			} else if (effectMode === 'ascii' && asciiPass) {
+				composer.addPass(asciiPass);
+			}
+			currentEffectMode = effectMode;
+		}
+
+		// Update effect params every frame based on active effect
+		if (effectMode === 'ascii' && crtAsciiEffect) {
 			crtAsciiEffect.cellSize = effectParams.cellSize;
 			crtAsciiEffect.invert = effectParams.invert;
 			crtAsciiEffect.colorMode = effectParams.colorMode;
@@ -602,22 +684,48 @@
 			crtAsciiEffect.brightnessAdjust = effectParams.brightnessAdjust;
 			crtAsciiEffect.contrastAdjust = effectParams.contrastAdjust;
 			crtAsciiEffect.bloomMix = effectParams.bloomMix;
+		} else if (effectMode === 'glitch' && chromaticGlitchEffect) {
+			chromaticGlitchEffect.aberrationAmount = effectParams.aberrationAmount ?? 0.005;
+			chromaticGlitchEffect.aberrationAngle = effectParams.aberrationAngle ?? 0;
+			chromaticGlitchEffect.aberrationAnimated = effectParams.aberrationAnimated ?? true;
+			chromaticGlitchEffect.aberrationSpeed = effectParams.aberrationSpeed ?? 2;
+			chromaticGlitchEffect.glitchIntensity = effectParams.cgGlitchIntensity ?? 0.1;
+			chromaticGlitchEffect.glitchFrequency = effectParams.cgGlitchFrequency ?? 4;
+			chromaticGlitchEffect.blockGlitchIntensity = effectParams.blockGlitchIntensity ?? 0.1;
+			chromaticGlitchEffect.blockGlitchSize = effectParams.blockGlitchSize ?? 20;
+			chromaticGlitchEffect.rgbShiftIntensity = effectParams.rgbShiftIntensity ?? 0.5;
+			chromaticGlitchEffect.scanlineIntensity = effectParams.cgScanlineIntensity ?? 0.1;
+			chromaticGlitchEffect.scanlineCount = effectParams.cgScanlineCount ?? 200;
+			chromaticGlitchEffect.scanlineSpeed = effectParams.scanlineSpeed ?? 0;
+			chromaticGlitchEffect.waveDistortion = effectParams.waveDistortion ?? 0;
+			chromaticGlitchEffect.waveFrequency = effectParams.waveFrequency ?? 10;
+			chromaticGlitchEffect.waveSpeed = effectParams.waveSpeed ?? 1;
+			chromaticGlitchEffect.saturation = effectParams.cgSaturation ?? 1;
+			chromaticGlitchEffect.brightness = effectParams.cgBrightness ?? 0;
+			chromaticGlitchEffect.contrast = effectParams.cgContrast ?? 1;
+			chromaticGlitchEffect.vignetteIntensity = effectParams.cgVignetteIntensity ?? 0.2;
+			chromaticGlitchEffect.vignetteRadius = effectParams.cgVignetteRadius ?? 1.2;
+			chromaticGlitchEffect.noiseIntensity = effectParams.cgNoiseIntensity ?? 0.02;
+			chromaticGlitchEffect.noiseSpeed = effectParams.cgNoiseSpeed ?? 10;
 		}
 		if (bloomEffect) {
-			bloomEffect.intensity = effectParams.bloomIntensity;
+			bloomEffect.intensity = effectParams.bloomIntensity ?? 2;
+			bloomEffect.luminanceThreshold = effectParams.bloomThreshold ?? 0.1;
 		}
 
 		// Update shadow material uniforms
+		const lightX = effectParams.lightX ?? 0.5;
+		const lightY = effectParams.lightY ?? 0.5;
 		shadowMaterials.forEach(mat => {
 			if (mat.uniforms) {
 				mat.uniforms.uShadowStrength.value = effectParams.shadowStrength ?? 0.45;
 				mat.uniforms.uHighlightStrength.value = effectParams.highlightStrength ?? 0.8;
-				mat.uniforms.uShadowAngle.value = effectParams.shadowAngle ?? -0.5;
-				mat.uniforms.uHighlightAngle.value = effectParams.highlightAngle ?? 0.5;
+				mat.uniforms.uLightX.value = lightX;
+				mat.uniforms.uLightY.value = lightY;
 			}
 		});
 
-		// Update line materials (width and fade uniforms)
+		// Update line materials (width, fade, and light direction uniforms)
 		const lineWidth = effectParams.lineWidth ?? 3;
 		const lineFadeStart = effectParams.lineFadeStart ?? 0.75;
 		const lineFadeEnd = effectParams.lineFadeEnd ?? 1.1;
@@ -628,6 +736,12 @@
 			}
 			if (mat.uniforms.lineFadeEnd) {
 				mat.uniforms.lineFadeEnd.value = lineFadeEnd;
+			}
+			if (mat.uniforms.lightX) {
+				mat.uniforms.lightX.value = lightX;
+			}
+			if (mat.uniforms.lightY) {
+				mat.uniforms.lightY.value = lightY;
 			}
 		});
 

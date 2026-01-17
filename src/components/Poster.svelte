@@ -53,6 +53,10 @@
 
 	// Disco ball CRT/ASCII effect params
 	let discoBallParams = {
+		// Effect mode: 'ascii' or 'glitch'
+		effectMode: 'glitch',
+
+		// ===== ASCII EFFECT PARAMS =====
 		// ASCII
 		cellSize: 2,
 		invert: false,
@@ -66,7 +70,8 @@
 		// Post
 		vignetteIntensity: 0.3,
 		vignetteRadius: 2,
-		bloomIntensity: 2,
+		bloomIntensity: 3,
+		bloomThreshold: 0.1,
 		bloomMix: 0.5,
 		// Extras
 		noiseIntensity: 0.1,
@@ -74,6 +79,38 @@
 		glitchFrequency: 0.5,
 		brightnessAdjust: 0,
 		contrastAdjust: 1,
+
+		// ===== CHROMATIC GLITCH EFFECT PARAMS =====
+		// Chromatic aberration
+		aberrationAmount: 0.008,
+		aberrationAngle: 0,
+		aberrationAnimated: true,
+		aberrationSpeed: 2,
+		// Glitch
+		cgGlitchIntensity: 0.15,
+		cgGlitchFrequency: 4,
+		blockGlitchIntensity: 0.1,
+		blockGlitchSize: 20,
+		rgbShiftIntensity: 0.5,
+		// Scanlines
+		cgScanlineIntensity: 0.15,
+		cgScanlineCount: 200,
+		scanlineSpeed: 0,
+		// Distortion
+		waveDistortion: 0,
+		waveFrequency: 10,
+		waveSpeed: 1,
+		// Color
+		cgSaturation: 1.1,
+		cgBrightness: 0,
+		cgContrast: 1.1,
+		cgVignetteIntensity: 0.25,
+		cgVignetteRadius: 1.2,
+		// Noise
+		cgNoiseIntensity: 0.03,
+		cgNoiseSpeed: 10,
+
+		// ===== SHARED PARAMS =====
 		// Transform
 		positionX: 0,
 		positionY: 0,
@@ -89,9 +126,9 @@
 		lineFadeStart: 0.75,
 		lineFadeEnd: 1.1,
 		lineWidth: 3,
-		// Shadow/Highlight positioning (diagonal direction: -1 = bottom-left, 1 = top-right)
-		shadowAngle: -0.5,    // Direction of shadow (-1 to 1, affects x+y weighting)
-		highlightAngle: 0.5   // Direction of highlight (-1 to 1)
+		// Unified lighting direction (shadow opposite, highlight aligned, fade follows)
+		lightX: 0.5,
+		lightY: 0.5
 	};
 
 	function updateScale() {
