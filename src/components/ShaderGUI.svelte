@@ -5,6 +5,9 @@
 	export let params;
 	export let imageSrc;
 
+	// Disco ball CRT/ASCII effect params
+	export let discoBallParams = null;
+
 	let pane;
 	let container;
 
@@ -15,7 +18,7 @@
 
 		pane = new Pane({
 			container,
-			title: 'Film Effects'
+			title: 'Effects'
 		});
 
 		// Color adjustments
@@ -41,11 +44,73 @@
 		pane.addBlade({ view: 'separator' });
 		pane.addBinding(params, 'blur', { min: 0, max: 10, step: 0.5, label: 'Blur' });
 
+		// Disco Ball CRT/ASCII Effect controls
+		if (discoBallParams) {
+			pane.addBlade({ view: 'separator' });
+
+			const discoFolder = pane.addFolder({ title: 'Disco Ball', expanded: true });
+
+			// ASCII settings - Tweakpane modifies object directly, DiscoBall reads every frame
+			const asciiFolder = discoFolder.addFolder({ title: 'ASCII', expanded: true });
+			asciiFolder.addBinding(discoBallParams, 'cellSize', { min: 2, max: 16, step: 1, label: 'Cell Size' });
+			asciiFolder.addBinding(discoBallParams, 'asciiStyle', {
+				label: 'Style',
+				options: {
+					'Standard': 0,
+					'Dense': 1,
+					'Minimal': 2,
+					'Blocks': 3
+				}
+			});
+			asciiFolder.addBinding(discoBallParams, 'colorMode', { label: 'Color Mode' });
+			asciiFolder.addBinding(discoBallParams, 'invert', { label: 'Invert' });
+
+			// CRT settings
+			const crtFolder = discoFolder.addFolder({ title: 'CRT', expanded: false });
+			crtFolder.addBinding(discoBallParams, 'scanlineIntensity', { min: 0, max: 1, step: 0.01, label: 'Scanlines' });
+			crtFolder.addBinding(discoBallParams, 'scanlineCount', { min: 50, max: 400, step: 10, label: 'Line Count' });
+			crtFolder.addBinding(discoBallParams, 'curvature', { min: 0, max: 0.2, step: 0.005, label: 'Curvature' });
+			crtFolder.addBinding(discoBallParams, 'aberrationStrength', { min: 0, max: 0.02, step: 0.001, label: 'Chromatic Ab.' });
+
+			// Post-processing
+			const postFolder = discoFolder.addFolder({ title: 'Post FX', expanded: false });
+			postFolder.addBinding(discoBallParams, 'vignetteIntensity', { min: 0, max: 1, step: 0.05, label: 'Vignette' });
+			postFolder.addBinding(discoBallParams, 'vignetteRadius', { min: 0.5, max: 2, step: 0.1, label: 'Vig. Radius' });
+			postFolder.addBinding(discoBallParams, 'bloomIntensity', { min: 0, max: 2, step: 0.05, label: 'Bloom' });
+			postFolder.addBinding(discoBallParams, 'bloomMix', { min: 0, max: 0.5, step: 0.01, label: 'Bloom Mix' });
+			postFolder.addBinding(discoBallParams, 'noiseIntensity', { min: 0, max: 0.1, step: 0.005, label: 'Noise' });
+
+			// Adjustment
+			const adjustFolder = discoFolder.addFolder({ title: 'Adjustments', expanded: false });
+			adjustFolder.addBinding(discoBallParams, 'brightnessAdjust', { min: -0.5, max: 0.5, step: 0.01, label: 'Brightness' });
+			adjustFolder.addBinding(discoBallParams, 'contrastAdjust', { min: 0.5, max: 2, step: 0.05, label: 'Contrast' });
+
+			// Glitch (optional effects)
+			const glitchFolder = discoFolder.addFolder({ title: 'Glitch', expanded: false });
+			glitchFolder.addBinding(discoBallParams, 'glitchIntensity', { min: 0, max: 0.5, step: 0.01, label: 'Intensity' });
+			glitchFolder.addBinding(discoBallParams, 'glitchFrequency', { min: 0, max: 10, step: 0.5, label: 'Frequency' });
+
+			// Transform controls
+			const transformFolder = discoFolder.addFolder({ title: 'Transform', expanded: true });
+			transformFolder.addBinding(discoBallParams, 'positionX', { min: -2, max: 2, step: 0.1, label: 'Position X' });
+			transformFolder.addBinding(discoBallParams, 'positionY', { min: -2, max: 2, step: 0.1, label: 'Position Y' });
+			transformFolder.addBinding(discoBallParams, 'scale', { min: 0.5, max: 3, step: 0.1, label: 'Scale' });
+			transformFolder.addBinding(discoBallParams, 'spinSpeed', { min: 0, max: 2, step: 0.05, label: 'Spin Speed' });
+			transformFolder.addBinding(discoBallParams, 'tilt', { min: 0, max: 1, step: 0.05, label: 'Tilt' });
+			transformFolder.addBinding(discoBallParams, 'ringTilt', { min: 0, max: 1.5, step: 0.05, label: 'Ring Tilt X' });
+			transformFolder.addBinding(discoBallParams, 'ringTilt2', { min: -1, max: 1, step: 0.05, label: 'Ring Tilt Y' });
+			transformFolder.addBinding(discoBallParams, 'ringSize', { min: 0.5, max: 2, step: 0.05, label: 'Ring Size' });
+		}
+
 		// Export button
 		pane.addBlade({ view: 'separator' });
 		pane.addButton({ title: 'Copy Params to Console' }).on('click', () => {
 			console.log('Current shader params:');
 			console.log(JSON.stringify(params, null, 2));
+			if (discoBallParams) {
+				console.log('Disco ball params:');
+				console.log(JSON.stringify(discoBallParams, null, 2));
+			}
 		});
 	});
 

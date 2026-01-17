@@ -2,8 +2,10 @@
 	import { onMount, createEventDispatcher } from 'svelte';
 	import BackgroundShader from './BackgroundShader.svelte';
 	import ShaderGUI from './ShaderGUI.svelte';
+	import DiscoBall from './DiscoBall.svelte';
 
 	let posterContainer;
+	let discoContainer;
 	let scaleFactor = 1;
 	const REFERENCE_WIDTH = 1133;
 	const REFERENCE_HEIGHT = 1600;
@@ -49,6 +51,40 @@
 
 	let imageSrc = '/assets/background.png';
 
+	// Disco ball CRT/ASCII effect params
+	let discoBallParams = {
+		// ASCII - using large cell size to make effect very obvious
+		cellSize: 12,
+		invert: false,
+		colorMode: true,
+		asciiStyle: 3, // 3 = blocks style for reference look
+		// CRT - strong scanlines to verify effect is working
+		scanlineIntensity: 0.5,
+		scanlineCount: 100,
+		curvature: 0.05,
+		// Post
+		aberrationStrength: 0.005,
+		vignetteIntensity: 0.3,
+		vignetteRadius: 1.0,
+		bloomIntensity: 0.4,
+		bloomMix: 0.15,
+		// Extras
+		noiseIntensity: 0.02,
+		glitchIntensity: 0,
+		glitchFrequency: 0,
+		brightnessAdjust: 0.05,
+		contrastAdjust: 1.1,
+		// Transform
+		positionX: 0,
+		positionY: 0,
+		scale: 1.2,
+		spinSpeed: 0.1,
+		tilt: 0.3,
+		ringTilt: 0.5,
+		ringTilt2: 0.3,
+		ringSize: 1.1
+	};
+
 	function updateScale() {
 		if (!posterContainer) return;
 		const { height } = posterContainer.getBoundingClientRect();
@@ -77,7 +113,7 @@
 
 <div class="poster" bind:this={posterContainer}>
 	<BackgroundShader container={posterContainer} params={shaderParams} {imageSrc} />
-	<ShaderGUI bind:params={shaderParams} bind:imageSrc />
+	<ShaderGUI bind:params={shaderParams} bind:imageSrc {discoBallParams} />
 	<div class="poster-content" style="transform: scale({scaleFactor});">
 		<!-- Names -->
 		<div class="names-section">
@@ -96,8 +132,10 @@
 			<h2 class="headline headline-love" class:loaded={fontsLoaded}>LOVE</h2>
 		</div>
 
-		<!-- Spacer for disco ball area -->
-		<div class="disco-spacer"></div>
+		<!-- Disco ball with CRT/ASCII effect -->
+		<div class="disco-container" bind:this={discoContainer}>
+			<DiscoBall effectParams={discoBallParams} />
+		</div>
 
 		<!-- Event details -->
 		<div class="event-details">
@@ -245,10 +283,12 @@
 		font-size: var(--headline-love-font-size, 89px);
 	}
 
-	/* Disco spacer */
-	.disco-spacer {
+	/* Disco ball container */
+	.disco-container {
 		flex: 1;
 		min-height: var(--disco-spacer-min-height, 320px);
+		width: 100%;
+		position: relative;
 	}
 
 	/* Event details */

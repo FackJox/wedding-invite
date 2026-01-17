@@ -30,8 +30,10 @@
 	},
 	"dependencies": {
 		"@svgdotjs/svg.js": "^3.2.4",
+		"postprocessing": "^6.38.2",
 		"snapsvg": "^0.5.1",
 		"svg-path-morph": "^1.0.5",
+		"three": "^0.182.0",
 		"tweakpane": "^4.0.5"
 	}
 }
