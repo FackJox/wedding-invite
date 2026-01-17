@@ -100,6 +100,24 @@
 	let panOffset = { x: 0, y: 0 };
 	let panDirection = { x: 0.894, y: 0.447 };
 
+	// Debug tracking
+	let lastTimestamp = 0;
+	let frameCount = 0;
+	let lastLogTime = 0;
+	let initialStartTime = 0; // Track if startTime ever changes
+	let maxSpeedModSeen = 0;
+	let minSpeedModSeen = 1;
+	let cumulativeTime = 0; // Track cumulative time to detect drift
+	let lastParamsSnapshot = null; // Track if params change
+	let renderCallCount = 0; // Track render calls per second to detect multiple loops
+	let lastRenderCountTime = 0;
+	// Track t values over time to detect acceleration
+	let lastT = 0;
+	let lastLoggedTime = 0;
+	let tHistory = []; // Store (realTime, t) pairs to detect acceleration
+	const instanceId = Math.random().toString(36).substring(7);
+	console.log('[BG-DIAG] Component instance created:', instanceId);
+
 	const VERTEX_SHADER = `
 		attribute vec2 aPosition;
 		varying vec2 vUv;
@@ -539,10 +557,169 @@
 			return;
 		}
 
+		// Track render calls per second to detect multiple loops
+		renderCallCount++;
+		if (timestamp - lastRenderCountTime > 1000) {
+			// Only warn if significantly higher than 144Hz (high refresh + multiple loops)
+			if (renderCallCount > 160) {
+				console.warn(`[BG-DIAG:${instanceId}] ⚠️ MULTIPLE RENDER LOOPS DETECTED: ${renderCallCount} calls/sec`);
+			}
+			renderCallCount = 0;
+			lastRenderCountTime = timestamp;
+		}
+
+		// Calculate frame delta in seconds for time-based animation
+		const frameDeltaMs = lastTimestamp > 0 ? timestamp - lastTimestamp : 16.67; // Default to ~60fps on first frame
+		const deltaTime = Math.min(frameDeltaMs / 1000, 0.1); // Cap at 100ms to prevent jumps
+		lastTimestamp = timestamp;
+		frameCount++;
+
 		const time = ((timestamp - startTime) / 1000) % 628;
 
-		panOffset.x += panDirection.x * params.panSpeed;
-		panOffset.y += panDirection.y * params.panSpeed;
+		// Calculate ALL shader time values in JS for diagnostics
+		const speedMod = 0.333 + (1.0 - 0.333) * (0.5 + 0.5 * Math.sin(time * Math.PI / 4.0));
+		const t = time * params.timeScale * speedMod; // Internal shader time
+		const rotationAngle = time * params.rotationSpeed * speedMod;
+		const breathePhase = time * params.breatheSpeed * speedMod;
+
+		// Swirl centers (these move with t)
+		const swirlCenter1X = 0.3 + Math.sin(t * 0.5) * 0.2;
+		const swirlCenter1Y = 0.4 + Math.cos(t * 0.4) * 0.2;
+		const swirlCenter2X = 0.7 + Math.cos(t * 0.6) * 0.2;
+		const swirlCenter2Y = 0.6 + Math.sin(t * 0.3) * 0.2;
+
+		// Blob frequencies (how fast the blob pattern moves)
+		const blob1Phase = t * 0.7; // Phase of blob1 x-component
+		const blob2Phase = t * 0.6; // Phase of blob2 x-component
+
+		// Flow phase
+		const flowPhase = t * 1.2;
+
+		// Ripple phases
+		const ripple1Phase = t * 2.0;
+		const ripple2Phase = t * 1.8;
+
+		maxSpeedModSeen = Math.max(maxSpeedModSeen, speedMod);
+		minSpeedModSeen = Math.min(minSpeedModSeen, speedMod);
+		cumulativeTime += deltaTime;
+
+		// Track t rate of change
+		const tDelta = t - lastT;
+		const timeDelta = time - lastLoggedTime;
+		const tRate = timeDelta > 0 ? tDelta / timeDelta : 0; // Rate of internal time per real time
+
+		// Store history every second for trend analysis
+		if (timestamp - lastLogTime > 1000) {
+			tHistory.push({ realTime: time, t: t, tRate: tRate });
+			// Keep last 60 entries (1 minute of data)
+			if (tHistory.length > 60) tHistory.shift();
+		}
+
+		// Log diagnostics every second
+		if (timestamp - lastLogTime > 1000) {
+			const elapsedSeconds = (timestamp - startTime) / 1000;
+			const rawElapsed = timestamp / 1000;
+
+			// Check if startTime changed
+			if (initialStartTime === 0) {
+				initialStartTime = startTime;
+			}
+			const startTimeChanged = startTime !== initialStartTime;
+
+			console.log(`[BG-DIAG:${instanceId}] ==============================`);
+			console.log(`[BG-DIAG:${instanceId}] RAW timestamp (ms):`, timestamp.toFixed(2));
+			console.log(`[BG-DIAG:${instanceId}] startTime:`, startTime.toFixed(2), startTimeChanged ? '⚠️ CHANGED!' : '(stable)');
+			console.log(`[BG-DIAG:${instanceId}] Elapsed since start (s):`, elapsedSeconds.toFixed(2));
+			console.log(`[BG-DIAG:${instanceId}] Shader time (wraps at 628):`, time.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] Time before wrap:`, ((timestamp - startTime) / 1000).toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] ------- SPEED VALUES -------`);
+			console.log(`[BG-DIAG:${instanceId}] speedMod (current):`, speedMod.toFixed(4), `(should be 0.333-1.0)`);
+			console.log(`[BG-DIAG:${instanceId}] speedMod range seen: [${minSpeedModSeen.toFixed(4)}, ${maxSpeedModSeen.toFixed(4)}]`);
+			console.log(`[BG-DIAG:${instanceId}] ------- SHADER TIME VALUES -------`);
+			console.log(`[BG-DIAG:${instanceId}] uTime (sent to shader):`, time.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] t (internal time = uTime*timeScale*speedMod):`, t.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] rotationAngle:`, rotationAngle.toFixed(4), `rad (${(rotationAngle * 180 / Math.PI).toFixed(1)}°)`);
+			console.log(`[BG-DIAG:${instanceId}] breathePhase:`, breathePhase.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] ------- ANIMATION PHASES -------`);
+			console.log(`[BG-DIAG:${instanceId}] blob1Phase:`, blob1Phase.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] blob2Phase:`, blob2Phase.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] flowPhase:`, flowPhase.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] ripple1Phase:`, ripple1Phase.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] ripple2Phase:`, ripple2Phase.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] ------- SWIRL CENTERS -------`);
+			console.log(`[BG-DIAG:${instanceId}] center1: (${swirlCenter1X.toFixed(4)}, ${swirlCenter1Y.toFixed(4)})`);
+			console.log(`[BG-DIAG:${instanceId}] center2: (${swirlCenter2X.toFixed(4)}, ${swirlCenter2Y.toFixed(4)})`);
+			console.log(`[BG-DIAG:${instanceId}] ------- EFFECTIVE SPEEDS -------`);
+			console.log(`[BG-DIAG:${instanceId}] Effective rotation speed:`, (params.rotationSpeed * speedMod).toFixed(6));
+			console.log(`[BG-DIAG:${instanceId}] Effective timeScale:`, (params.timeScale * speedMod).toFixed(6));
+			console.log(`[BG-DIAG:${instanceId}] Effective breatheSpeed:`, (params.breatheSpeed * speedMod).toFixed(6));
+			console.log(`[BG-DIAG:${instanceId}] ------- T RATE ANALYSIS -------`);
+			console.log(`[BG-DIAG:${instanceId}] t rate (dt/dRealTime):`, tRate.toFixed(6));
+			console.log(`[BG-DIAG:${instanceId}] Expected avg rate:`, (params.timeScale * 0.667).toFixed(6), '(timeScale * avgSpeedMod)');
+			if (tHistory.length >= 10) {
+				// Calculate trend over last 10 seconds
+				const recent = tHistory.slice(-10);
+				const firstEntry = recent[0];
+				const lastEntry = recent[recent.length - 1];
+				const avgRate = (lastEntry.t - firstEntry.t) / (lastEntry.realTime - firstEntry.realTime);
+				console.log(`[BG-DIAG:${instanceId}] Avg t rate (last 10s):`, avgRate.toFixed(6));
+
+				// Check for acceleration by comparing first half vs second half
+				if (tHistory.length >= 20) {
+					const firstHalf = tHistory.slice(-20, -10);
+					const secondHalf = tHistory.slice(-10);
+					const rate1 = (firstHalf[firstHalf.length-1].t - firstHalf[0].t) / (firstHalf[firstHalf.length-1].realTime - firstHalf[0].realTime);
+					const rate2 = (secondHalf[secondHalf.length-1].t - secondHalf[0].t) / (secondHalf[secondHalf.length-1].realTime - secondHalf[0].realTime);
+					const rateChange = ((rate2 - rate1) / rate1) * 100;
+					console.log(`[BG-DIAG:${instanceId}] Rate 1st half:`, rate1.toFixed(6), 'Rate 2nd half:', rate2.toFixed(6));
+					console.log(`[BG-DIAG:${instanceId}] Rate change:`, rateChange.toFixed(2) + '%', rateChange > 5 ? '⚠️ ACCELERATING!' : '(stable)');
+				}
+			}
+			console.log(`[BG-DIAG:${instanceId}] ------- FRAME TIMING -------`);
+			console.log(`[BG-DIAG:${instanceId}] Frame delta (ms):`, frameDeltaMs.toFixed(2));
+			console.log(`[BG-DIAG:${instanceId}] FPS:`, (1000 / frameDeltaMs).toFixed(1));
+			console.log(`[BG-DIAG:${instanceId}] deltaTime (s):`, deltaTime.toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] cumulativeTime (s):`, cumulativeTime.toFixed(2));
+			console.log(`[BG-DIAG:${instanceId}] cumulativeTime vs elapsed drift:`, (cumulativeTime - elapsedSeconds).toFixed(4));
+			console.log(`[BG-DIAG:${instanceId}] Total frames:`, frameCount);
+			console.log(`[BG-DIAG:${instanceId}] ------- PAN VALUES -------`);
+			console.log(`[BG-DIAG:${instanceId}] panOffset:`, { x: panOffset.x.toFixed(4), y: panOffset.y.toFixed(4) });
+			console.log(`[BG-DIAG:${instanceId}] panDirection:`, { x: panDirection.x.toFixed(4), y: panDirection.y.toFixed(4) });
+			console.log(`[BG-DIAG:${instanceId}] panSpeed param:`, params.panSpeed);
+			console.log(`[BG-DIAG:${instanceId}] Pan movement this frame:`, (panDirection.x * params.panSpeed * deltaTime * 60).toFixed(6));
+
+			// Check if params changed
+			const currentParamsSnapshot = JSON.stringify({
+				rotationSpeed: params.rotationSpeed,
+				timeScale: params.timeScale,
+				breatheSpeed: params.breatheSpeed,
+				swirlSpeed: params.swirlSpeed,
+				panSpeed: params.panSpeed
+			});
+			if (lastParamsSnapshot !== null && lastParamsSnapshot !== currentParamsSnapshot) {
+				console.warn(`[BG-DIAG:${instanceId}] ⚠️ PARAMS CHANGED!`);
+				console.warn(`[BG-DIAG:${instanceId}]   Old:`, lastParamsSnapshot);
+				console.warn(`[BG-DIAG:${instanceId}]   New:`, currentParamsSnapshot);
+			}
+			lastParamsSnapshot = currentParamsSnapshot;
+
+			// Log all speed-related params
+			console.log(`[BG-DIAG:${instanceId}] ------- KEY SPEED PARAMS -------`);
+			console.log(`[BG-DIAG:${instanceId}] rotationSpeed:`, params.rotationSpeed);
+			console.log(`[BG-DIAG:${instanceId}] timeScale:`, params.timeScale);
+			console.log(`[BG-DIAG:${instanceId}] breatheSpeed:`, params.breatheSpeed);
+			console.log(`[BG-DIAG:${instanceId}] swirlSpeed:`, params.swirlSpeed);
+
+			lastLogTime = timestamp;
+			lastT = t;
+			lastLoggedTime = time;
+		}
+
+		// Time-based pan movement (frame-rate independent)
+		// panSpeed is now units per second, not per frame
+		// Multiply by 60 to maintain similar visual speed (assuming original was ~60fps)
+		panOffset.x += panDirection.x * params.panSpeed * deltaTime * 60;
+		panOffset.y += panDirection.y * params.panSpeed * deltaTime * 60;
 		panOffset.x = ((panOffset.x % 4) + 4) % 4;
 		panOffset.y = ((panOffset.y % 4) + 4) % 4;
 
@@ -627,12 +804,25 @@
 		animationId = requestAnimationFrame(render);
 	}
 
+	// Track all active instances globally
+	if (browser && !window.__bgShaderInstances) {
+		window.__bgShaderInstances = new Set();
+	}
+
 	onMount(async () => {
 		mounted = true;
 		await tick();
 
+		if (browser) {
+			window.__bgShaderInstances.add(instanceId);
+			console.log(`[BG-DIAG:${instanceId}] onMount - Active instances:`, Array.from(window.__bgShaderInstances));
+		}
+
+		console.log(`[BG-DIAG:${instanceId}] onMount called - initializing`);
+		console.log(`[BG-DIAG:${instanceId}] Initial params:`, JSON.stringify(params, null, 2));
+
 		if (!initWebGL()) {
-			console.error('Failed to initialize WebGL');
+			console.error(`[BG-DIAG:${instanceId}] Failed to initialize WebGL`);
 			return;
 		}
 
@@ -640,7 +830,10 @@
 		handleResize();
 
 		startTime = performance.now();
+		console.log(`[BG-DIAG:${instanceId}] Animation starting, startTime:`, startTime);
+		console.log(`[BG-DIAG:${instanceId}] Initial animationId before start:`, animationId);
 		animationId = requestAnimationFrame(render);
+		console.log(`[BG-DIAG:${instanceId}] Animation started, animationId:`, animationId);
 
 		window.addEventListener('resize', handleResize);
 		window.addEventListener('mousemove', handleMouseMove);
@@ -648,10 +841,17 @@
 	});
 
 	onDestroy(() => {
+		console.log(`[BG-DIAG:${instanceId}] onDestroy called, canceling animationId:`, animationId);
 		if (!browser) return;
+
+		if (window.__bgShaderInstances) {
+			window.__bgShaderInstances.delete(instanceId);
+			console.log(`[BG-DIAG:${instanceId}] Removed from instances. Remaining:`, Array.from(window.__bgShaderInstances));
+		}
 
 		if (animationId) {
 			cancelAnimationFrame(animationId);
+			console.log(`[BG-DIAG:${instanceId}] Canceled animationId:`, animationId);
 		}
 		window.removeEventListener('resize', handleResize);
 		window.removeEventListener('mousemove', handleMouseMove);

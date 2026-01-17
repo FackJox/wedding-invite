@@ -3,6 +3,9 @@
 	import { browser } from '$app/environment';
 	import * as THREE from 'three';
 	import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+	import { Line2 } from 'three/addons/lines/Line2.js';
+	import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+	import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 	import { EffectComposer, RenderPass, EffectPass, BloomEffect } from 'postprocessing';
 	import { CrtAsciiEffect } from '$lib/shaders/CrtAsciiEffect.js';
 
@@ -12,6 +15,7 @@
 	// Disco ball color - matching reference red/coral
 	const DISCO_COLOR = 0xe05050;
 	const SPARKLE_COLOR = 0xe05050;
+	const LINE_WIDTH = 2.5; // Adjustable line thickness
 
 	let canvas;
 	let mounted = false;
@@ -22,10 +26,15 @@
 	let discoBallModel;
 	let decorations = [];
 	let animationId;
+	let lineMaterials = []; // Track LineMaterials for resolution/width updates
+	let shadowMaterials = []; // Track shadow shader materials for uniform updates
 
 	// Effect references
 	let crtAsciiEffect = null;
 	let bloomEffect = null;
+
+	// Clipping plane to hide back half of disco ball and rings
+	const clippingPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 
 	function initThree() {
 		scene = new THREE.Scene();
@@ -55,6 +64,7 @@
 		renderer.outputColorSpace = THREE.SRGBColorSpace;
 		renderer.toneMapping = THREE.ACESFilmicToneMapping;
 		renderer.toneMappingExposure = 1.2;
+		renderer.localClippingEnabled = true;
 
 		// Lighting
 		const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -115,17 +125,142 @@
 			(gltf) => {
 				discoBallModel = gltf.scene;
 
-				// Wireframe material - only tile outlines visible, front face only
+				// Edge rendering with fading + tile shadows for depth
+				const edgesToAdd = [];
 				discoBallModel.traverse((child) => {
 					if (child.isMesh) {
-						child.material = new THREE.MeshBasicMaterial({
-							color: DISCO_COLOR,
-							wireframe: true,
-							wireframeLinewidth: 2,
-							side: THREE.FrontSide
+						// TILE SHADOWS: Apply directional shading material
+						// Create custom shader material for directional shadow effect
+						const shadowMaterial = new THREE.ShaderMaterial({
+							uniforms: {
+								uColor: { value: new THREE.Color(DISCO_COLOR) },
+								uShadowStrength: { value: 0.45 },
+								uHighlightStrength: { value: 0.8 },
+								uShadowAngle: { value: -0.5 },
+								uHighlightAngle: { value: 0.5 },
+								uBaseOpacity: { value: 0.0 }
+							},
+							vertexShader: `
+								varying vec3 vNormal;
+								varying vec3 vPosition;
+								void main() {
+									vNormal = normalize(normalMatrix * normal);
+									vPosition = position;
+									gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+								}
+							`,
+							fragmentShader: `
+								uniform vec3 uColor;
+								uniform float uShadowStrength;
+								uniform float uHighlightStrength;
+								uniform float uShadowAngle;
+								uniform float uHighlightAngle;
+								uniform float uBaseOpacity;
+								varying vec3 vNormal;
+								varying vec3 vPosition;
+								void main() {
+									// Shadow position based on angle (-1 = bottom-left, 1 = top-right)
+									float shadowPos = vPosition.x * (1.0 + uShadowAngle) + vPosition.y * (1.0 - uShadowAngle);
+									float shadow = smoothstep(0.5, -0.8, shadowPos) * uShadowStrength;
+
+									// Highlight position based on angle
+									float highlightPos = vPosition.x * (1.0 + uHighlightAngle) + vPosition.y * (1.0 - uHighlightAngle);
+									float highlight = smoothstep(-0.2, 0.8, highlightPos) * uHighlightStrength;
+
+									// Combine: shadow adds opacity, highlight removes it
+									float alpha = uBaseOpacity + shadow - highlight;
+									alpha = clamp(alpha, 0.0, 1.0);
+
+									gl_FragColor = vec4(uColor, alpha);
+								}
+							`,
+							transparent: true,
+							side: THREE.FrontSide,
+							clippingPlanes: [clippingPlane],
+							clipIntersection: false
 						});
+						child.material = shadowMaterial;
+						child.visible = true;
+						shadowMaterials.push(shadowMaterial);
+
+						// LINE FADING: Create edges with LineMaterial + custom fade injection
+						const edges = new THREE.EdgesGeometry(child.geometry, 1);
+						const positions = edges.attributes.position.array;
+
+						const lineGeometry = new LineSegmentsGeometry();
+						lineGeometry.setPositions(positions);
+
+						// Create LineMaterial with shader injection for position-based alpha fading
+						const lineMaterial = new LineMaterial({
+							color: DISCO_COLOR,
+							linewidth: effectParams.lineWidth ?? LINE_WIDTH,
+							clippingPlanes: [clippingPlane],
+							clipIntersection: false,
+							resolution: new THREE.Vector2(canvas.width, canvas.height),
+							transparent: true,
+							opacity: 1.0,
+							alphaToCoverage: false
+						});
+
+						// Add custom uniforms for fade control
+						lineMaterial.uniforms.lineFadeStart = { value: effectParams.lineFadeStart ?? 0.3 };
+						lineMaterial.uniforms.lineFadeEnd = { value: effectParams.lineFadeEnd ?? 1.1 };
+
+						// Inject custom fade logic into the shader
+						lineMaterial.onBeforeCompile = (shader) => {
+							// Add our custom uniforms
+							shader.uniforms.lineFadeStart = lineMaterial.uniforms.lineFadeStart;
+							shader.uniforms.lineFadeEnd = lineMaterial.uniforms.lineFadeEnd;
+
+							// Add varying for world position to vertex shader
+							shader.vertexShader = shader.vertexShader.replace(
+								'void main() {',
+								`varying vec3 vWorldPos;
+								void main() {`
+							);
+							// Calculate and pass world position
+							shader.vertexShader = shader.vertexShader.replace(
+								'#include <fog_vertex>',
+								`#include <fog_vertex>
+								vec3 worldStart = (modelMatrix * vec4(instanceStart, 1.0)).xyz;
+								vec3 worldEnd = (modelMatrix * vec4(instanceEnd, 1.0)).xyz;
+								vWorldPos = ( position.y < 0.5 ) ? worldStart : worldEnd;`
+							);
+
+							// Add uniforms and varying to fragment shader
+							shader.fragmentShader = shader.fragmentShader.replace(
+								'void main() {',
+								`uniform float lineFadeStart;
+								uniform float lineFadeEnd;
+								varying vec3 vWorldPos;
+								void main() {`
+							);
+							// Apply position-based alpha fade before final output
+							shader.fragmentShader = shader.fragmentShader.replace(
+								'gl_FragColor = vec4( diffuseColor.rgb, alpha );',
+								`// Position-based fading
+								float diagPos = vWorldPos.x + vWorldPos.y;
+								float fadeFactor = 1.0;
+								if (diagPos > lineFadeStart) {
+									fadeFactor = 1.0 - clamp((diagPos - lineFadeStart) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
+								} else if (diagPos < -lineFadeStart) {
+									fadeFactor = clamp((diagPos + lineFadeEnd) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
+								}
+								gl_FragColor = vec4( diffuseColor.rgb, alpha * fadeFactor );`
+							);
+						};
+						lineMaterials.push(lineMaterial);
+
+						const edgeLines = new Line2(lineGeometry, lineMaterial);
+						edgeLines.computeLineDistances();
+						edgeLines.position.copy(child.position);
+						edgeLines.rotation.copy(child.rotation);
+						edgeLines.scale.copy(child.scale);
+						edgesToAdd.push(edgeLines);
 					}
 				});
+				// Add edges after traversal to avoid modifying during iteration
+				edgesToAdd.forEach(edge => discoBallModel.add(edge));
 
 				discoBallModel.scale.setScalar(1.2);
 				discoBallModel.position.set(0, 0, 0);
@@ -143,28 +278,140 @@
 
 	function createFallbackBall() {
 		const geometry = new THREE.IcosahedronGeometry(0.8, 2);
-		const material = new THREE.MeshBasicMaterial({
-			color: DISCO_COLOR,
-			wireframe: true,
-			wireframeLinewidth: 2,
+
+		// Create group to hold both mesh and lines
+		discoBallModel = new THREE.Group();
+
+		// Add shaded mesh for tile shadows
+		const shadowMaterial = new THREE.ShaderMaterial({
+			uniforms: {
+				uColor: { value: new THREE.Color(DISCO_COLOR) },
+				uShadowStrength: { value: 0.45 },
+				uHighlightStrength: { value: 0.8 },
+				uShadowAngle: { value: -0.5 },
+				uHighlightAngle: { value: 0.5 },
+				uBaseOpacity: { value: 0.0 }
+			},
+			vertexShader: `
+				varying vec3 vNormal;
+				varying vec3 vPosition;
+				void main() {
+					vNormal = normalize(normalMatrix * normal);
+					vPosition = position;
+					gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+				}
+			`,
+			fragmentShader: `
+				uniform vec3 uColor;
+				uniform float uShadowStrength;
+				uniform float uHighlightStrength;
+				uniform float uShadowAngle;
+				uniform float uHighlightAngle;
+				uniform float uBaseOpacity;
+				varying vec3 vNormal;
+				varying vec3 vPosition;
+				void main() {
+					float shadowPos = vPosition.x * (1.0 + uShadowAngle) + vPosition.y * (1.0 - uShadowAngle);
+					float shadow = smoothstep(0.5, -0.8, shadowPos) * uShadowStrength;
+					float highlightPos = vPosition.x * (1.0 + uHighlightAngle) + vPosition.y * (1.0 - uHighlightAngle);
+					float highlight = smoothstep(-0.2, 0.8, highlightPos) * uHighlightStrength;
+					float alpha = clamp(uBaseOpacity + shadow - highlight, 0.0, 1.0);
+					gl_FragColor = vec4(uColor, alpha);
+				}
+			`,
+			transparent: true,
 			side: THREE.FrontSide
 		});
-		discoBallModel = new THREE.Mesh(geometry, material);
+		shadowMaterials.push(shadowMaterial);
+		const mesh = new THREE.Mesh(geometry, shadowMaterial);
+		discoBallModel.add(mesh);
+
+		// Edge rendering with fading using LineMaterial + custom fade injection
+		const edges = new THREE.EdgesGeometry(geometry, 15);
+		const positions = edges.attributes.position.array;
+
+		const lineGeometry = new LineSegmentsGeometry();
+		lineGeometry.setPositions(positions);
+
+		const lineMaterial = new LineMaterial({
+			color: DISCO_COLOR,
+			linewidth: effectParams.lineWidth ?? LINE_WIDTH,
+			resolution: new THREE.Vector2(canvas.width, canvas.height),
+			transparent: true,
+			opacity: 1.0
+		});
+
+		// Add custom uniforms for fade control
+		lineMaterial.uniforms.lineFadeStart = { value: effectParams.lineFadeStart ?? 0.3 };
+		lineMaterial.uniforms.lineFadeEnd = { value: effectParams.lineFadeEnd ?? 1.1 };
+
+		// Inject custom fade logic into the shader
+		lineMaterial.onBeforeCompile = (shader) => {
+			shader.uniforms.lineFadeStart = lineMaterial.uniforms.lineFadeStart;
+			shader.uniforms.lineFadeEnd = lineMaterial.uniforms.lineFadeEnd;
+
+			shader.vertexShader = shader.vertexShader.replace(
+				'void main() {',
+				`varying vec3 vWorldPos;
+				void main() {`
+			);
+			shader.vertexShader = shader.vertexShader.replace(
+				'#include <fog_vertex>',
+				`#include <fog_vertex>
+				vec3 worldStart = (modelMatrix * vec4(instanceStart, 1.0)).xyz;
+				vec3 worldEnd = (modelMatrix * vec4(instanceEnd, 1.0)).xyz;
+				vWorldPos = ( position.y < 0.5 ) ? worldStart : worldEnd;`
+			);
+
+			shader.fragmentShader = shader.fragmentShader.replace(
+				'void main() {',
+				`uniform float lineFadeStart;
+				uniform float lineFadeEnd;
+				varying vec3 vWorldPos;
+				void main() {`
+			);
+			shader.fragmentShader = shader.fragmentShader.replace(
+				'gl_FragColor = vec4( diffuseColor.rgb, alpha );',
+				`float diagPos = vWorldPos.x + vWorldPos.y;
+				float fadeFactor = 1.0;
+				if (diagPos > lineFadeStart) {
+					fadeFactor = 1.0 - clamp((diagPos - lineFadeStart) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
+				} else if (diagPos < -lineFadeStart) {
+					fadeFactor = clamp((diagPos + lineFadeEnd) / (lineFadeEnd - lineFadeStart), 0.0, 1.0);
+				}
+				gl_FragColor = vec4( diffuseColor.rgb, alpha * fadeFactor );`
+			);
+		};
+		lineMaterials.push(lineMaterial);
+
+		const edgeLines = new Line2(lineGeometry, lineMaterial);
+		edgeLines.computeLineDistances();
+		discoBallModel.add(edgeLines);
+
 		scene.add(discoBallModel);
 		addDecorations();
 	}
 
 	function addDecorations() {
-		// Ring around the ball
+		// Ring around the ball (with clipping)
 		const ringGeometry = new THREE.TorusGeometry(1.1, 0.02, 16, 100);
-		const ringMaterial = new THREE.MeshBasicMaterial({ color: DISCO_COLOR });
+		const ringMaterial = new THREE.MeshBasicMaterial({
+			color: DISCO_COLOR,
+			clippingPlanes: [clippingPlane],
+			clipIntersection: false
+		});
 		const ring = new THREE.Mesh(ringGeometry, ringMaterial);
 		ring.rotation.x = Math.PI / 2;
 		scene.add(ring);
 		decorations.push(ring);
 
 		// Second tilted ring
-		const ring2 = ring.clone();
+		const ring2Material = new THREE.MeshBasicMaterial({
+			color: DISCO_COLOR,
+			clippingPlanes: [clippingPlane],
+			clipIntersection: false
+		});
+		const ring2 = new THREE.Mesh(ringGeometry, ring2Material);
 		ring2.rotation.x = Math.PI / 2;
 		ring2.rotation.z = Math.PI / 6;
 		scene.add(ring2);
@@ -274,6 +521,11 @@
 			crtAsciiEffect.setSize(width, height);
 		}
 
+		// Update LineMaterial resolutions (required for proper line width)
+		lineMaterials.forEach(mat => {
+			mat.resolution.set(width, height);
+		});
+
 		// Update orthographic camera
 		const aspect = width / height;
 		const frustumSize = 3;
@@ -284,8 +536,15 @@
 		camera.updateProjectionMatrix();
 	}
 
+	let lastTimestamp = 0;
+
 	function animate(timestamp) {
 		if (!renderer || !scene || !camera) return;
+
+		// Calculate delta time for frame-rate independent animation
+		const deltaMs = lastTimestamp > 0 ? timestamp - lastTimestamp : 16.67;
+		const deltaTime = Math.min(deltaMs / 1000, 0.1); // Cap at 100ms
+		lastTimestamp = timestamp;
 
 		const time = timestamp * 0.001;
 
@@ -311,11 +570,12 @@
 		const ringTilt = effectParams.ringTilt ?? 0.5;
 		const ringTilt2 = effectParams.ringTilt2 ?? 0.3;
 		const ringSize = effectParams.ringSize ?? 1.1;
+		const ringRotationSpeed = 0.12; // radians per second (0.002 * 60fps = 0.12)
 		decorations.forEach((dec, i) => {
 			if (dec.geometry && dec.geometry.type === 'TorusGeometry') {
 				dec.rotation.x = Math.PI / 2 + ringTilt;
 				dec.rotation.y = ringTilt2;
-				dec.rotation.z += 0.002 * (i % 2 === 0 ? 1 : -1);
+				dec.rotation.z += ringRotationSpeed * deltaTime * (i % 2 === 0 ? 1 : -1);
 				dec.scale.setScalar(ringSize);
 			}
 		});
@@ -346,6 +606,30 @@
 		if (bloomEffect) {
 			bloomEffect.intensity = effectParams.bloomIntensity;
 		}
+
+		// Update shadow material uniforms
+		shadowMaterials.forEach(mat => {
+			if (mat.uniforms) {
+				mat.uniforms.uShadowStrength.value = effectParams.shadowStrength ?? 0.45;
+				mat.uniforms.uHighlightStrength.value = effectParams.highlightStrength ?? 0.8;
+				mat.uniforms.uShadowAngle.value = effectParams.shadowAngle ?? -0.5;
+				mat.uniforms.uHighlightAngle.value = effectParams.highlightAngle ?? 0.5;
+			}
+		});
+
+		// Update line materials (width and fade uniforms)
+		const lineWidth = effectParams.lineWidth ?? 3;
+		const lineFadeStart = effectParams.lineFadeStart ?? 0.75;
+		const lineFadeEnd = effectParams.lineFadeEnd ?? 1.1;
+		lineMaterials.forEach(mat => {
+			mat.linewidth = lineWidth;
+			if (mat.uniforms.lineFadeStart) {
+				mat.uniforms.lineFadeStart.value = lineFadeStart;
+			}
+			if (mat.uniforms.lineFadeEnd) {
+				mat.uniforms.lineFadeEnd.value = lineFadeEnd;
+			}
+		});
 
 		// Render
 		composer.render();
@@ -385,6 +669,10 @@
 			if (dec.geometry) dec.geometry.dispose();
 			if (dec.material) dec.material.dispose();
 		});
+		lineMaterials.forEach(mat => mat.dispose());
+		lineMaterials = [];
+		shadowMaterials.forEach(mat => mat.dispose());
+		shadowMaterials = [];
 	});
 </script>
 

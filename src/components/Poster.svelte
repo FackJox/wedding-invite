@@ -53,36 +53,45 @@
 
 	// Disco ball CRT/ASCII effect params
 	let discoBallParams = {
-		// ASCII - using large cell size to make effect very obvious
-		cellSize: 12,
+		// ASCII
+		cellSize: 2,
 		invert: false,
 		colorMode: true,
-		asciiStyle: 3, // 3 = blocks style for reference look
-		// CRT - strong scanlines to verify effect is working
-		scanlineIntensity: 0.5,
-		scanlineCount: 100,
-		curvature: 0.05,
+		asciiStyle: 0,
+		// CRT
+		scanlineIntensity: 0.51,
+		scanlineCount: 290,
+		curvature: 0,
+		aberrationStrength: 0,
 		// Post
-		aberrationStrength: 0.005,
 		vignetteIntensity: 0.3,
-		vignetteRadius: 1.0,
-		bloomIntensity: 0.4,
-		bloomMix: 0.15,
+		vignetteRadius: 2,
+		bloomIntensity: 2,
+		bloomMix: 0.5,
 		// Extras
-		noiseIntensity: 0.02,
-		glitchIntensity: 0,
-		glitchFrequency: 0,
-		brightnessAdjust: 0.05,
-		contrastAdjust: 1.1,
+		noiseIntensity: 0.1,
+		glitchIntensity: 0.2,
+		glitchFrequency: 0.5,
+		brightnessAdjust: 0,
+		contrastAdjust: 1,
 		// Transform
 		positionX: 0,
 		positionY: 0,
 		scale: 1.2,
 		spinSpeed: 0.1,
 		tilt: 0.3,
-		ringTilt: 0.5,
+		ringTilt: 0.2,
 		ringTilt2: 0.3,
-		ringSize: 1.1
+		ringSize: 1.2,
+		// Shading
+		shadowStrength: 0.45,
+		highlightStrength: 0.8,
+		lineFadeStart: 0.75,
+		lineFadeEnd: 1.1,
+		lineWidth: 3,
+		// Shadow/Highlight positioning (diagonal direction: -1 = bottom-left, 1 = top-right)
+		shadowAngle: -0.5,    // Direction of shadow (-1 to 1, affects x+y weighting)
+		highlightAngle: 0.5   // Direction of highlight (-1 to 1)
 	};
 
 	function updateScale() {

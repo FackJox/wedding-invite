@@ -129,7 +129,20 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
   }
 
   vec2 cellUV = (cellCoord + 0.5) / cellCount;
-  vec4 cellColor = texture2D(inputBuffer, cellUV);
+
+  // Apply chromatic aberration to ASCII cell sampling
+  vec4 cellColor;
+  if (aberrationStrength > 0.0) {
+    float offset = aberrationStrength;
+    vec2 uvR = cellUV + vec2(offset, 0.0);
+    vec2 uvB = cellUV - vec2(offset, 0.0);
+    float r = texture2D(inputBuffer, uvR).r;
+    float g = texture2D(inputBuffer, cellUV).g;
+    float b = texture2D(inputBuffer, uvB).b;
+    cellColor = vec4(r, g, b, 1.0);
+  } else {
+    cellColor = texture2D(inputBuffer, cellUV);
+  }
   float brightness = dot(cellColor.rgb, vec3(0.299, 0.587, 0.114));
 
   if (invert) brightness = 1.0 - brightness;

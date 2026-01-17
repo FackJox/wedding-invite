@@ -100,6 +100,16 @@
 			transformFolder.addBinding(discoBallParams, 'ringTilt', { min: 0, max: 1.5, step: 0.05, label: 'Ring Tilt X' });
 			transformFolder.addBinding(discoBallParams, 'ringTilt2', { min: -1, max: 1, step: 0.05, label: 'Ring Tilt Y' });
 			transformFolder.addBinding(discoBallParams, 'ringSize', { min: 0.5, max: 2, step: 0.05, label: 'Ring Size' });
+
+			// Shading controls
+			const shadingFolder = discoFolder.addFolder({ title: 'Shading', expanded: true });
+			shadingFolder.addBinding(discoBallParams, 'shadowStrength', { min: 0, max: 1, step: 0.05, label: 'Shadow' });
+			shadingFolder.addBinding(discoBallParams, 'shadowAngle', { min: -1, max: 1, step: 0.05, label: 'Shadow Pos' });
+			shadingFolder.addBinding(discoBallParams, 'highlightStrength', { min: 0, max: 1, step: 0.05, label: 'Highlight' });
+			shadingFolder.addBinding(discoBallParams, 'highlightAngle', { min: -1, max: 1, step: 0.05, label: 'Highlight Pos' });
+			shadingFolder.addBinding(discoBallParams, 'lineFadeStart', { min: -1, max: 1, step: 0.05, label: 'Fade Start' });
+			shadingFolder.addBinding(discoBallParams, 'lineFadeEnd', { min: 0.5, max: 2, step: 0.05, label: 'Fade End' });
+			shadingFolder.addBinding(discoBallParams, 'lineWidth', { min: 0.5, max: 8, step: 0.5, label: 'Line Width' });
 		}
 
 		// Export button
